@@ -53,16 +53,16 @@ compile on windows: gcc pulse.c -o pulse.exe -lpsapi -lws2_32
 #include <arpa/inet.h>
 
 struct cpu_stats {
-    unsigned long long user;
-    unsigned long long nice;
-    unsigned long long system;
-    unsigned long long idle;
-    unsigned long long iowait;
-    unsigned long long irq;
-    unsigned long long softirq;
-    unsigned long long steal;
-    unsigned long long guest;
-    unsigned long long guest_nice;
+    uint64_t user;
+    uint64_t nice;
+    uint64_t system;
+    uint64_t idle;
+    uint64_t iowait;
+    uint64_t irq;
+    uint64_t softirq;
+    uint64_t steal;
+    uint64_t guest;
+    uint64_t guest_nice;
 };
 
 /* system info struct */
@@ -81,14 +81,14 @@ int get_cpu_stats(struct cpu_stats* stats) {
   return 0;
 }
 double calculate_cpu_usage(struct cpu_stats* prev, struct cpu_stats* curr) {
-    unsigned long long prev_idle = prev->idle + prev->iowait;
-    unsigned long long curr_idle = curr->idle + curr->iowait;
-    unsigned long long prev_non_idle = prev->user + prev->nice + prev->system + prev->irq + prev->softirq + prev->steal;
-    unsigned long long curr_non_idle = curr->user + curr->nice + curr->system + curr->irq + curr->softirq + curr->steal;
-    unsigned long long prev_total = prev_idle + prev_non_idle;
-    unsigned long long curr_total = curr_idle + curr_non_idle;
-    unsigned long long total_diff = curr_total - prev_total;
-    unsigned long long idle_diff = curr_idle - prev_idle;
+    uint64_t prev_idle = prev->idle + prev->iowait;
+    uint64_t curr_idle = curr->idle + curr->iowait;
+    uint64_t prev_non_idle = prev->user + prev->nice + prev->system + prev->irq + prev->softirq + prev->steal;
+    uint64_t curr_non_idle = curr->user + curr->nice + curr->system + curr->irq + curr->softirq + curr->steal;
+    uint64_t prev_total = prev_idle + prev_non_idle;
+    uint64_t curr_total = curr_idle + curr_non_idle;
+    uint64_t total_diff = curr_total - prev_total;
+    uint64_t idle_diff = curr_idle - prev_idle;
     return (double)(total_diff - idle_diff) / total_diff;
 }
 

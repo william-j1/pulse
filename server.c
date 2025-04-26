@@ -684,7 +684,10 @@ int main(int argc, char *argv[])
   g_process_count = process_names_count();
 
   printf("Pulse Server\n\n");
-  printf("Authority key set to: %s\n\n", ak);
+  if ( strlen(ak) )
+    printf("Authority key set to: %s\n\n", ak);
+  else
+    printf("Key-less mode, any client can probe this server\n\n");
 #ifdef _WIN32
   return winmain(ak);
 #elif __linux__

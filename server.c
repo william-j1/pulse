@@ -383,7 +383,7 @@ int winmain(char *ak)
   uint32_t bc = 0;
 
   /* null terminated key buffer */
-  char *kb = NULL;
+  char *keybuffer_t = NULL;
 
   /* length of authority key */
   uint16_t ak_len = strlen(ak);
@@ -475,14 +475,14 @@ int winmain(char *ak)
         {
           /* length specific comparison - depending on the client 
              type, on occasion a junk newline gets appended */
-          kb = (char*)malloc((ak_len+1) * sizeof(char));
-          strncpy(str_key_comparison, socket_data, ak_len);
-          kb[ak_len] = '\0'; // attach null terminator
+          keybuffer_t = (char*)malloc((ak_len+1) * sizeof(char));
+          strncpy(keybuffer_t, socket_data, ak_len);
+          keybuffer_t[ak_len] = '\0'; // attach null terminator
         }
 
         /* check authority key given by client is 
            equal to the key defined in this instance */
-        if ( ak_len == 0 || strcmp(kb, ak) == 0 )
+        if ( ak_len == 0 || strcmp(keybuffer_t, ak) == 0 )
         {
           /* pull ip */
           char *c_ipaddr = inet_ntoa(sa.sin_addr);
@@ -498,7 +498,7 @@ int winmain(char *ak)
           free(ps);
         }
         if ( ak_len > 0 )
-          free(kb);
+          free(keybuffer_t);
         closesocket(responder);
         shutdown(responder, SD_BOTH);
         bc = 0;

@@ -333,8 +333,8 @@ uint32_t uptime_in_secs() {
 /* compiles a pulse string */
 char* make_pulse_string()
 {
-  uint32_t total_ds = total_disk_space();
-  uint32_t free_ds = available_space();
+  uint64_t total_ds = total_disk_space();
+  uint64_t free_ds = available_space();
   uint32_t total_mem = total_physical_memory();
   uint32_t free_mem = available_memory();
   char *pulse_str = (char*)malloc(g_io_buffer_length * sizeof(char));
@@ -344,9 +344,9 @@ char* make_pulse_string()
   psi += snprintf(pulse_str+psi, g_io_buffer_length-psi, "%s", g_delimitor);
   psi += snprintf(pulse_str+psi, g_io_buffer_length-psi, "%d", uptime_in_secs());
   psi += snprintf(pulse_str+psi, g_io_buffer_length-psi, "%s", g_delimitor);
-  psi += snprintf(pulse_str+psi, g_io_buffer_length-psi, "%d", total_ds);
+  psi += snprintf(pulse_str+psi, g_io_buffer_length-psi, "%llu", total_ds);
   psi += snprintf(pulse_str+psi, g_io_buffer_length-psi, "%s", g_delimitor);
-  psi += snprintf(pulse_str+psi, g_io_buffer_length-psi, "%d", free_ds);
+  psi += snprintf(pulse_str+psi, g_io_buffer_length-psi, "%llu", free_ds);
   psi += snprintf(pulse_str+psi, g_io_buffer_length-psi, "%s", g_delimitor);
   psi += snprintf(pulse_str+psi, g_io_buffer_length-psi, "%.4f", 1.0-(float)free_ds/total_ds);
   psi += snprintf(pulse_str+psi, g_io_buffer_length-psi, "%s", g_delimitor);

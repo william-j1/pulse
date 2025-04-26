@@ -386,7 +386,7 @@ int winmain(char *ak)
   char *str_key_comparison = NULL;
 
   /* length of authority key */
-  uint16_t key_length = strlen(ak);
+  uint16_t ak_len = strlen(ak);
 
   /* start winsock 2.2 */
   uint32_t error_code = WSAStartup(MAKEWORD(2,2), &wsa_data);
@@ -468,18 +468,21 @@ int winmain(char *ak)
       /* receive a data chunk up to the buffer length */
       bc = recv(responder, socket_data, socket_data_len, 0);
 
-      /* proceed if authority key provided  */
-      if ( bc >= key_length )
+      /* proceed if authority key provided unless key length is zero */
+      if ( ak_len == 0 || bc >= ak_len )
       {
-        /* length specific comparison - depending on the client 
-           type, on occasion a junk newline gets appended */
-        str_key_comparison = (char*)malloc((key_length+1) * sizeof(char));
-        strncpy(str_key_comparison, socket_data, key_length);
-        str_key_comparison[key_length] = '\0'; // attach null terminator
+        if ( ak_len > 0 )
+        {
+          /* length specific comparison - depending on the client 
+             type, on occasion a junk newline gets appended */
+          str_key_comparison = (char*)malloc((key_length+1) * sizeof(char));
+          strncpy(str_key_comparison, socket_data, key_length);
+          str_key_comparison[key_length] = '\0'; // attach null terminator
+        }
 
         /* check authority key given by client is 
            equal to the key defined in this instance */
-        if ( strcmp(str_key_comparison, ak) == 0 )
+        if ( ak_len == 0 || strcmp(str_key_comparison, ak) == 0 )
         {
           /* pull ip */
           char *c_ipaddr = inet_ntoa(sa.sin_addr);
@@ -494,7 +497,8 @@ int winmain(char *ak)
             printf("%s => %s\n", ps, c_ipaddr);
           free(ps);
         }
-        free(str_key_comparison);
+        if ( ak_len > 0 )
+          free(str_key_comparison);
         closesocket(responder);
         shutdown(responder, SD_BOTH);
         bc = 0;

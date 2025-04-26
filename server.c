@@ -615,7 +615,7 @@ int linmain(char *ak) {
 
     /* check authoriy key given by client is 
        equal to the key defined in this instance */
-    if ( strcmp(socket_data, ak) == 0 )
+    if ( strlen(ak) == 0 || strcmp(socket_data, ak) == 0 )
     {
       printf("valid authority key (%s) provided by client (%s)\n", ak, c_ipaddr);
 

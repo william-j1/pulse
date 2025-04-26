@@ -35,7 +35,3 @@ Perform the key override using the form:
 ## Deployment Notes
 
 Change (g_daemon_key, g_daemon_port) to match your organisations requirements.
-
-## License
-
-Copyright 2025 William Johnson <williamj.inbox@gmail.com>

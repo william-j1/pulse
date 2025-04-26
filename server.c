@@ -337,25 +337,25 @@ char* make_pulse_string()
   uint64_t free_ds = available_space();
   uint32_t total_mem = total_physical_memory();
   uint32_t free_mem = available_memory();
-  char *pulse_str = (char*)malloc(g_io_buffer_length * sizeof(char));
-  int psi = snprintf(pulse_str, 100, "%.4f", cpu_load());
-  psi += snprintf(pulse_str+psi, g_io_buffer_length-psi, "%s", g_delimitor);
-  psi += snprintf(pulse_str+psi, g_io_buffer_length-psi, "%d", database_running());
-  psi += snprintf(pulse_str+psi, g_io_buffer_length-psi, "%s", g_delimitor);
-  psi += snprintf(pulse_str+psi, g_io_buffer_length-psi, "%d", uptime_in_secs());
-  psi += snprintf(pulse_str+psi, g_io_buffer_length-psi, "%s", g_delimitor);
-  psi += snprintf(pulse_str+psi, g_io_buffer_length-psi, "%llu", total_ds);
-  psi += snprintf(pulse_str+psi, g_io_buffer_length-psi, "%s", g_delimitor);
-  psi += snprintf(pulse_str+psi, g_io_buffer_length-psi, "%llu", free_ds);
-  psi += snprintf(pulse_str+psi, g_io_buffer_length-psi, "%s", g_delimitor);
-  psi += snprintf(pulse_str+psi, g_io_buffer_length-psi, "%.4f", 1.0-(float)free_ds/total_ds);
-  psi += snprintf(pulse_str+psi, g_io_buffer_length-psi, "%s", g_delimitor);
-  psi += snprintf(pulse_str+psi, g_io_buffer_length-psi, "%d", total_mem);
-  psi += snprintf(pulse_str+psi, g_io_buffer_length-psi, "%s", g_delimitor);
-  psi += snprintf(pulse_str+psi, g_io_buffer_length-psi, "%d", free_mem);
-  psi += snprintf(pulse_str+psi, g_io_buffer_length-psi, "%s", g_delimitor);
-  psi += snprintf(pulse_str+psi, g_io_buffer_length-psi, "%.4f", 1.0-(float)free_mem/total_mem);
-  return pulse_str;
+  char *ps = (char*)malloc(g_io_buffer_length * sizeof(char));
+  int psi = snprintf(ps, 100, "%.4f", cpu_load());
+  psi += snprintf(ps+psi, g_io_buffer_length-psi, "%s", g_delimitor);
+  psi += snprintf(ps+psi, g_io_buffer_length-psi, "%d", database_running());
+  psi += snprintf(ps+psi, g_io_buffer_length-psi, "%s", g_delimitor);
+  psi += snprintf(ps+psi, g_io_buffer_length-psi, "%d", uptime_in_secs());
+  psi += snprintf(ps+psi, g_io_buffer_length-psi, "%s", g_delimitor);
+  psi += snprintf(ps+psi, g_io_buffer_length-psi, "%llu", total_ds);
+  psi += snprintf(ps+psi, g_io_buffer_length-psi, "%s", g_delimitor);
+  psi += snprintf(ps+psi, g_io_buffer_length-psi, "%llu", free_ds);
+  psi += snprintf(ps+psi, g_io_buffer_length-psi, "%s", g_delimitor);
+  psi += snprintf(ps+psi, g_io_buffer_length-psi, "%.4f", 1.0-(float)free_ds/total_ds);
+  psi += snprintf(ps+psi, g_io_buffer_length-psi, "%s", g_delimitor);
+  psi += snprintf(ps+psi, g_io_buffer_length-psi, "%d", total_mem);
+  psi += snprintf(ps+psi, g_io_buffer_length-psi, "%s", g_delimitor);
+  psi += snprintf(ps+psi, g_io_buffer_length-psi, "%d", free_mem);
+  psi += snprintf(ps+psi, g_io_buffer_length-psi, "%s", g_delimitor);
+  psi += snprintf(ps+psi, g_io_buffer_length-psi, "%.4f", 1.0-(float)free_mem/total_mem);
+  return ps;
 }
 
 #ifdef _WIN32

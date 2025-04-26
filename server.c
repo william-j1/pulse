@@ -677,7 +677,7 @@ int main(int argc, char *argv[])
           ak = argv[1];
   }}}
   g_process_count = process_names_count();
-  printf("%d\n\n", g_process_count);
+
   printf("Pulse Server\n\n");
   printf("Authority key set to: %s\n\n", ak);
 #ifdef _WIN32

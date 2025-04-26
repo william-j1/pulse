@@ -29,7 +29,7 @@ DEPLOYMENT NOTES:
 #ifdef _WIN32
 
 /*
-compile on windows: gcc pulse.c -o pulse.exe -lpsapi -lws2_32
+compile on windows: gcc server.c -o pulse.exe -lpsapi -lws2_32
 */
 
 #include <winsock2.h>

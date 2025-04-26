@@ -2,6 +2,8 @@
 
 Cross platform server to return diagnostic metrics to clients which can periodically probe its instance over TCP/IP.
 
+![screenshot](client.png)
+
 ## Metrics
 
 At present nine properties are processed by the server and are returned left-to-right separated by a ":" delimitor. These include:

@@ -627,12 +627,12 @@ int linmain(char *authority_key) {
         perror("socket write ERROR");
       else
         printf("%s => %s\n", ps, c_ipaddr);
+      free(ps);
     }
     else
     {
       printf("invalid authority key (%s) provided by client (%s)\n", socket_data, c_ipaddr);
     }
-    free(ps);
     close(socket_client);
     close(socket_server);
     sleep_ms(200);

@@ -388,9 +388,9 @@ int winmain(char *ak)
   /* length of authority key */
   uint16_t ak_len = strlen(ak);
 
-  /* start winsock 2.2 */
-  uint32_t error_code = WSAStartup(MAKEWORD(2,2), &wsa_data);
-  if ( error_code != 0 ) {
+  /* start winsock 2.2 - ec = error code should problem arise */
+  uint32_t ec = WSAStartup(MAKEWORD(2,2), &wsa_data);
+  if ( ec != 0 ) {
     printf("winsock library failed with code: %d", error_code);
     return 1;
   }
@@ -403,9 +403,9 @@ int winmain(char *ak)
   hints.ai_flags = AI_PASSIVE;      /* socket address used in bind func */
 
   /* pull info */
-  error_code = getaddrinfo(NULL, g_daemon_port, &hints, &result);
-  if ( error_code != 0 ) {
-    printf("getaddrinfo failed with error: %d\n", error_code);
+  ec = getaddrinfo(NULL, g_daemon_port, &hints, &result);
+  if ( ec != 0 ) {
+    printf("getaddrinfo failed with error: %d\n", ec);
     WSACleanup();
     return 1;
   }
@@ -421,8 +421,8 @@ int winmain(char *ak)
   }
 
   /* bind to address and port of our choosing */
-  error_code = bind(listener, result->ai_addr, (int)result->ai_addrlen);
-  if ( error_code == SOCKET_ERROR ) {
+  ec = bind(listener, result->ai_addr, (int)result->ai_addrlen);
+  if ( ec == SOCKET_ERROR ) {
     printf("binding failed with error: %d\n", WSAGetLastError());
     freeaddrinfo(result);
     closesocket(listener);
@@ -435,8 +435,8 @@ int winmain(char *ak)
 
   /* the socket is setup to listen, this is non-blocking, the accept 
      function inside the indefinite loop (below) is blocking */
-  error_code = listen(listener, SOMAXCONN);
-  if ( error_code == SOCKET_ERROR ) {
+  ec = listen(listener, SOMAXCONN);
+  if ( ec == SOCKET_ERROR ) {
     printf("listener failed with error: %d\n", WSAGetLastError());
     closesocket(listener);
     WSACleanup();

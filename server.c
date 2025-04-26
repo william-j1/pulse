@@ -492,6 +492,7 @@ int winmain(char *authority_key)
           n = send(responder, ps, strlen(ps), 0);
           if ( n != 0 )
             printf("%s => %s\n", ps, c_ipaddr);
+          free(ps);
         }
         free(str_key_comparison);
         closesocket(responder);

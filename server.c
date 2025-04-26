@@ -360,7 +360,7 @@ char* make_pulse_string()
 
 #ifdef _WIN32
 /* entry point for windows */
-int winmain(char *authority_key)
+int winmain(char *ak)
 {
   /* winsock library */
   WSADATA wsa_data;
@@ -386,7 +386,7 @@ int winmain(char *authority_key)
   char *str_key_comparison = NULL;
 
   /* length of authority key */
-  uint16_t key_length = strlen(authority_key);
+  uint16_t key_length = strlen(ak);
 
   /* start winsock 2.2 */
   uint32_t error_code = WSAStartup(MAKEWORD(2,2), &wsa_data);
@@ -479,7 +479,7 @@ int winmain(char *authority_key)
 
         /* check authority key given by client is 
            equal to the key defined in this instance */
-        if ( strcmp(str_key_comparison, authority_key) == 0 )
+        if ( strcmp(str_key_comparison, ak) == 0 )
         {
           /* pull ip */
           char *c_ipaddr = inet_ntoa(sa.sin_addr);
@@ -526,7 +526,7 @@ char *get_client_ip(const struct sockaddr *sa, char *ipstr, uint16_t mlen)
 	}
 	return ipstr;
 }
-int linmain(char *authority_key) {
+int linmain(char *ak) {
 
   /* socket handles */
   int32_t socket_server, socket_client;
@@ -615,9 +615,9 @@ int linmain(char *authority_key) {
 
     /* check authoriy key given by client is 
        equal to the key defined in this instance */
-    if ( strcmp(socket_data, authority_key) == 0 )
+    if ( strcmp(socket_data, ak) == 0 )
     {
-      printf("valid authority key (%s) provided by client (%s)\n", authority_key, c_ipaddr);
+      printf("valid authority key (%s) provided by client (%s)\n", ak, c_ipaddr);
 
       /* compile pulse string and send back */
       ps = make_pulse_string();

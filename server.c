@@ -475,9 +475,9 @@ int winmain(char *ak)
         {
           /* length specific comparison - depending on the client 
              type, on occasion a junk newline gets appended */
-          sz_lengthed_key = (char*)malloc((key_length+1) * sizeof(char));
-          strncpy(str_key_comparison, socket_data, key_length);
-          sz_lengthed_key[key_length] = '\0'; // attach null terminator
+          sz_lengthed_key = (char*)malloc((ak_len+1) * sizeof(char));
+          strncpy(str_key_comparison, socket_data, ak_len);
+          sz_lengthed_key[ak_len] = '\0'; // attach null terminator
         }
 
         /* check authority key given by client is 

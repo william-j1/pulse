@@ -391,7 +391,7 @@ int winmain(char *ak)
   /* start winsock 2.2 - ec = error code should problem arise */
   uint32_t ec = WSAStartup(MAKEWORD(2,2), &wsa_data);
   if ( ec != 0 ) {
-    printf("winsock library failed with code: %d", error_code);
+    printf("winsock library failed with code: %d", ec);
     return 1;
   }
 

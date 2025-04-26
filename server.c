@@ -491,7 +491,7 @@ int winmain(char *authority_key)
           char *ps = make_pulse_string();
           n = send(responder, ps, strlen(ps), 0);
           if ( n != 0 )
-            printf("%s pulse sent to client %s\n", ps, c_ipaddr);
+            printf("%s => %s\n", ps, c_ipaddr);
         }
         free(str_key_comparison);
         closesocket(responder);
@@ -625,7 +625,7 @@ int linmain(char *authority_key) {
       if ( n < 0 )
         perror("socket write ERROR");
       else
-        printf("%s pulse sent to client %s\n", ps, c_ipaddr);
+        printf("%s => %s\n", ps, c_ipaddr);
     }
     else
     {

@@ -134,7 +134,7 @@ pid_t process_id(const char *pname) {
 
 /* daemon key for pulse - this is the key which the clients must
    provide for the connection to be successful */
-static const char g_daemon_key[] = "DEFAULT_KEY";
+static const char g_daemon_key[] = "";
 
 /* daemon port - this is the port bind, the server (this) listens
    and accepts client requests to this port */

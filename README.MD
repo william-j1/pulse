@@ -34,6 +34,14 @@ Perform the key override using the form:
 ./server -kREPLACE_WITH_YOUR_SECURITY_KEY
 ```
 
+## Keyless Form
+
+Omit the override by simply invoking the server without a key. By default, the server is keyless so use the authority key form ^ should it be desirable to do so.
+
+```
+./server
+```
+
 ## Deployment Notes
 
 Change (g_daemon_key, g_daemon_port) to match your organisations requirements.

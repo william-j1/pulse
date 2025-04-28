@@ -472,8 +472,7 @@ int winmain(char *ak)
       {
         if ( ak_len > 0 )
         {
-          /* length specific comparison - depending on the client 
-             type, on occasion a junk newline gets appended */
+          /* length specific comparison */
           keybuffer_t = (char*)malloc((ak_len+1) * sizeof(char));
           strncpy(keybuffer_t, socket_data, ak_len);
           keybuffer_t[ak_len] = '\0'; // attach null terminator
@@ -553,6 +552,9 @@ int linmain(char *ak) {
   /* length of authority key */
   uint16_t ak_len = strlen(ak);
 
+  /* null terminated key buffer */
+  char *keybuffer_t = NULL;
+
   /* poll the cpu */
   get_cpu_stats(&curr_stats);
   sleep(1);
@@ -612,12 +614,20 @@ int linmain(char *ak) {
     /* ipv6 addresses consist of a maximum 39 characters */
     get_client_ip((struct sockaddr*)&cli_addr, c_ipaddr, 64);
 
+    if ( ak_len > 0 )
+    {
+      /* length specific comparison */
+      keybuffer_t = (char*)malloc((ak_len+1) * sizeof(char));
+      strncpy(keybuffer_t, socket_data, ak_len);
+      keybuffer_t[ak_len] = '\0'; // attach null terminator
+    }
+
     /* pulse string */
     char* ps;
 
     /* check authoriy key given by client is 
        equal to the key defined in this instance */
-    if ( ak_len == 0 || strcmp(socket_data, ak) == 0 )
+    if ( ak_len == 0 || strcmp(keybuffer_t, ak) == 0 )
     {
       if ( ak_len > 0 )
         printf("valid authority key (%s) provided by client (%s)\n", ak, c_ipaddr);
@@ -634,6 +644,8 @@ int linmain(char *ak) {
     {
       printf("invalid authority key (%s) provided by client (%s)\n", socket_data, c_ipaddr);
     }
+    if ( ak_len > 0 )
+      free(keybuffer_t);
     close(socket_client);
     close(socket_server);
     sleep_ms(200);

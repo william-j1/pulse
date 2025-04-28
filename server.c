@@ -340,8 +340,8 @@ char* make_pulse_string()
 {
   uint64_t total_ds = total_disk_space();
   uint64_t free_ds = available_space();
-  uint32_t total_mem = total_physical_memory();
-  uint32_t free_mem = available_memory();
+  uint64_t total_mem = total_physical_memory();
+  uint64_t free_mem = available_memory();
   char *ps = (char*)malloc(g_max_buffer_len * sizeof(char));
   int psi = snprintf(ps, 100, "%.4f", cpu_load());
   psi += snprintf(ps+psi, g_max_buffer_len-psi, "%s", g_delimitor);

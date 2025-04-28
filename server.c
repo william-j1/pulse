@@ -153,7 +153,7 @@ static uint8_t g_process_count;
 static const char *g_db_process_list[] = {"mysql", "mysqld.exe", "mysqld", "mariadbd", "memcached", "db2sysc", "cassandra", "redis-server", "mongod", "mongos", "tnslsnr", "oracle", "sqlservr", "postgres"};
 
 /* internal buffer length to handle network-io */
-static const uint16_t g_io_buffer_length = 512;
+static const uint16_t g_max_buffer_len = 512;
 
 /* mount point for checking disk stats */
 #ifdef _WIN64
@@ -337,24 +337,24 @@ char* make_pulse_string()
   uint64_t free_ds = available_space();
   uint32_t total_mem = total_physical_memory();
   uint32_t free_mem = available_memory();
-  char *ps = (char*)malloc(g_io_buffer_length * sizeof(char));
+  char *ps = (char*)malloc(g_max_buffer_len * sizeof(char));
   int psi = snprintf(ps, 100, "%.4f", cpu_load());
-  psi += snprintf(ps+psi, g_io_buffer_length-psi, "%s", g_delimitor);
-  psi += snprintf(ps+psi, g_io_buffer_length-psi, "%d", database_running());
-  psi += snprintf(ps+psi, g_io_buffer_length-psi, "%s", g_delimitor);
-  psi += snprintf(ps+psi, g_io_buffer_length-psi, "%d", uptime_in_secs());
-  psi += snprintf(ps+psi, g_io_buffer_length-psi, "%s", g_delimitor);
-  psi += snprintf(ps+psi, g_io_buffer_length-psi, "%llu", total_ds);
-  psi += snprintf(ps+psi, g_io_buffer_length-psi, "%s", g_delimitor);
-  psi += snprintf(ps+psi, g_io_buffer_length-psi, "%llu", free_ds);
-  psi += snprintf(ps+psi, g_io_buffer_length-psi, "%s", g_delimitor);
-  psi += snprintf(ps+psi, g_io_buffer_length-psi, "%.4f", 1.0-(float)free_ds/total_ds);
-  psi += snprintf(ps+psi, g_io_buffer_length-psi, "%s", g_delimitor);
-  psi += snprintf(ps+psi, g_io_buffer_length-psi, "%d", total_mem);
-  psi += snprintf(ps+psi, g_io_buffer_length-psi, "%s", g_delimitor);
-  psi += snprintf(ps+psi, g_io_buffer_length-psi, "%d", free_mem);
-  psi += snprintf(ps+psi, g_io_buffer_length-psi, "%s", g_delimitor);
-  psi += snprintf(ps+psi, g_io_buffer_length-psi, "%.4f", 1.0-(float)free_mem/total_mem);
+  psi += snprintf(ps+psi, g_max_buffer_len-psi, "%s", g_delimitor);
+  psi += snprintf(ps+psi, g_max_buffer_len-psi, "%d", database_running());
+  psi += snprintf(ps+psi, g_max_buffer_len-psi, "%s", g_delimitor);
+  psi += snprintf(ps+psi, g_max_buffer_len-psi, "%d", uptime_in_secs());
+  psi += snprintf(ps+psi, g_max_buffer_len-psi, "%s", g_delimitor);
+  psi += snprintf(ps+psi, g_max_buffer_len-psi, "%llu", total_ds);
+  psi += snprintf(ps+psi, g_max_buffer_len-psi, "%s", g_delimitor);
+  psi += snprintf(ps+psi, g_max_buffer_len-psi, "%llu", free_ds);
+  psi += snprintf(ps+psi, g_max_buffer_len-psi, "%s", g_delimitor);
+  psi += snprintf(ps+psi, g_max_buffer_len-psi, "%.4f", 1.0-(float)free_ds/total_ds);
+  psi += snprintf(ps+psi, g_max_buffer_len-psi, "%s", g_delimitor);
+  psi += snprintf(ps+psi, g_max_buffer_len-psi, "%d", total_mem);
+  psi += snprintf(ps+psi, g_max_buffer_len-psi, "%s", g_delimitor);
+  psi += snprintf(ps+psi, g_max_buffer_len-psi, "%d", free_mem);
+  psi += snprintf(ps+psi, g_max_buffer_len-psi, "%s", g_delimitor);
+  psi += snprintf(ps+psi, g_max_buffer_len-psi, "%.4f", 1.0-(float)free_mem/total_mem);
   return ps;
 }
 
@@ -374,10 +374,10 @@ int winmain(char *ak)
   struct addrinfo hints;
 
   /* socket work variables */
-  char socket_data[g_io_buffer_length];
+  char socket_data[g_max_buffer_len];
 
   /* max length of data chunk from on-going socket */
-  socklen_t socket_data_len = g_io_buffer_length;
+  socklen_t socket_data_len = g_max_buffer_len;
 
   /* byte count received */
   uint32_t bc = 0;
@@ -540,7 +540,7 @@ int linmain(char *ak) {
   socklen_t client_addr_length;
 
   /* socket data buffer length */
-  char socket_data[g_io_buffer_length];
+  char socket_data[g_max_buffer_len];
 
   /* server and client addr structs */
   struct sockaddr_in serv_addr, cli_addr;
@@ -602,10 +602,10 @@ int linmain(char *ak) {
     }
 
     /* cleanse the struct with zeros before read */
-    bzero(socket_data, g_io_buffer_length);
+    bzero(socket_data, g_max_buffer_len);
 
     /* read data chunk */
-    n = read(socket_client, socket_data, g_io_buffer_length-1);
+    n = read(socket_client, socket_data, g_max_buffer_len-1);
 
     if ( n < 0 ) {
       perror("socket read ERROR");

@@ -26,7 +26,7 @@ DEPLOYMENT NOTES:
 #include <stdint.h>
 #include <string.h>
 
-#ifdef _WIN32
+#ifdef _WIN64
 
 /*
 compile on windows: gcc server.c -o pulse.exe -lpsapi -lws2_32
@@ -156,7 +156,7 @@ static const char *g_db_process_list[] = {"mysql", "mysqld.exe", "mysqld", "mari
 static const uint16_t g_io_buffer_length = 512;
 
 /* mount point for checking disk stats */
-#ifdef _WIN32
+#ifdef _WIN64
 static const char g_mount_point[] = "C:\\";
 #elif __linux__
 static const char g_mount_point[] = "/";
@@ -180,7 +180,7 @@ void sleep_ms(uint32_t milliseconds) {
 
 /* available memory in kb */
 uint64_t available_memory() {
-#ifdef _WIN32
+#ifdef _WIN64
   MEMORYSTATUSEX mi;
   mi.dwLength = sizeof(mi);
   GlobalMemoryStatusEx(&mi);
@@ -203,8 +203,8 @@ uint64_t available_memory() {
 }
 
 /* available disk space in kb */
-uint32_t available_space() {
-#ifdef _WIN32
+uint64_t available_space() {
+#ifdef _WIN64
   ULARGE_INTEGER lpFBA, lpTNB, lpTNFB;
   if ( GetDiskFreeSpaceEx(g_mount_point, &lpFBA, &lpTNB, &lpTNFB) )
     return lpFBA.QuadPart / g_bytes_per_kb;
@@ -220,7 +220,7 @@ uint32_t available_space() {
 /* current cpu load using prior tick computation */
 double cpu_load()
 {
-#ifdef _WIN32
+#ifdef _WIN64
   FILETIME it; /* idle time */
   FILETIME kt; /* kernel time */
   FILETIME ut; /* user time */
@@ -250,7 +250,7 @@ double cpu_load()
 /* signals that a live database is running */
 uint8_t database_running() {
   uint32_t q = 0;
-#ifdef _WIN32
+#ifdef _WIN64
   DWORD processIds[1024], bytesNeeded, procCount;
   HANDLE hProcess = NULL;
   TCHAR szProcessName[MAX_PATH] = TEXT("<unknown>");
@@ -289,8 +289,8 @@ uint8_t database_running() {
 }
 
 /* total disk space in kb */
-uint32_t total_disk_space() {
-#ifdef _WIN32
+uint64_t total_disk_space() {
+#ifdef _WIN64
   ULARGE_INTEGER lpFBA, lpTNB, lpTNFB;
   if ( GetDiskFreeSpaceEx(g_mount_point, &lpFBA, &lpTNB, &lpTNFB) )
     return lpTNB.QuadPart/g_bytes_per_kb;
@@ -304,8 +304,8 @@ uint32_t total_disk_space() {
 }
 
 /* total physical memory on server box */
-uint32_t total_physical_memory() {
-#ifdef _WIN32
+uint64_t total_physical_memory() {
+#ifdef _WIN64
   MEMORYSTATUSEX mi;
   mi.dwLength = sizeof(mi);
   GlobalMemoryStatusEx(&mi);
@@ -320,7 +320,7 @@ uint32_t total_physical_memory() {
 
 /* current uptime */
 uint32_t uptime_in_secs() {
-#ifdef _WIN32
+#ifdef _WIN64
   return GetTickCount() / 1000;
 #elif __linux__
   int error = sysinfo(&s_info);
@@ -358,7 +358,7 @@ char* make_pulse_string()
   return ps;
 }
 
-#ifdef _WIN32
+#ifdef _WIN64
 /* entry point for windows */
 int winmain(char *ak)
 {
@@ -693,7 +693,7 @@ int main(int argc, char *argv[])
     printf("Authority key set to: %s\n\n", ak);
   else
     printf("Key-less mode, any client can probe this server\n\n");
-#ifdef _WIN32
+#ifdef _WIN64
   return winmain(ak);
 #elif __linux__
   return linmain(ak);

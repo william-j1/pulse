@@ -382,10 +382,10 @@ int winmain(char *ak)
   struct addrinfo hints;
 
   /* socket work variables */
-  char socket_data[g_max_buffer_len];
+  char sock_data[g_max_buffer_len];
 
   /* max length of data chunk from on-going socket */
-  socklen_t socket_data_len = g_max_buffer_len;
+  socklen_t sock_data_len = g_max_buffer_len;
 
   /* byte count received */
   uint32_t bc = 0;
@@ -473,13 +473,13 @@ int winmain(char *ak)
     do
     {
       /* receive a data chunk up to the buffer length */
-      bc = recv(responder, socket_data, socket_data_len, 0);
+      bc = recv(responder, sock_data, sock_data_len, 0);
 
       /* proceed if authority key provided unless key length is zero */
       if ( ak_len == 0 || bc >= ak_len )
       {
         if ( ak_len > 0 )
-          allocate_key_buffer(&key_t, socket_data, ak_len);
+          allocate_key_buffer(&key_t, sock_data, ak_len);
 
         /* check authority key given by client is 
            equal to the key defined in this instance */
@@ -534,14 +534,14 @@ char *get_client_ip(const struct sockaddr *sa, char *ipstr, uint16_t mlen)
 }
 int linmain(char *ak) {
 
-  /* socket handles */
-  int32_t socket_server, socket_client;
+  /* file descriptors */
+  int32_t server, client;
 
   /* addr struct length */
   socklen_t client_addr_length;
 
   /* socket data buffer length */
-  char socket_data[g_max_buffer_len];
+  char sock_data[g_max_buffer_len];
 
   /* server and client addr structs */
   struct sockaddr_in serv_addr, cli_addr;
@@ -564,8 +564,8 @@ int linmain(char *ak) {
 
   while(1)
   {
-  	socket_server = socket(AF_INET, SOCK_STREAM, 0);
-  	if ( socket_server < 0 ) {
+  	server = socket(AF_INET, SOCK_STREAM, 0);
+  	if ( server < 0 ) {
   		perror("socket opening ERROR");
   		continue;
   	}
@@ -574,7 +574,7 @@ int linmain(char *ak) {
   	bzero((char*)&serv_addr, sizeof(serv_addr));
 
     /* set socket options */
-    if ( setsockopt(socket_server, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) {
+    if ( setsockopt(server, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) {
       perror("setsockopt");
       exit(EXIT_FAILURE);
     }
@@ -583,33 +583,33 @@ int linmain(char *ak) {
     serv_addr.sin_port = htons(atoi(g_daemon_port));
 
     /* bind to ip and port */
-    if ( bind(socket_server, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0 )
+    if ( bind(server, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0 )
     {
         perror("socket binding ERROR");
-        close(socket_server);
+        close(server);
         continue;
     }
 
     printf("awaiting connection(s)...\n");
 
     /* listen */
-    listen(socket_server, 10);
+    listen(server, 10);
     client_addr_length = sizeof(cli_addr);
-    socket_client = accept(socket_server, (struct sockaddr*)&cli_addr, &client_addr_length);
-    if ( socket_client < 0 ) {
+    client = accept(server, (struct sockaddr*)&cli_addr, &client_addr_length);
+    if ( client < 0 ) {
       perror("socket accept ERROR");
-      close(socket_server);
+      close(server);
       continue;
     }
 
     /* cleanse the struct with zeros before read */
-    bzero(socket_data, g_max_buffer_len);
+    bzero(sock_data, g_max_buffer_len);
 
     /* read data chunk */
-    if ( read(socket_client, socket_data, g_max_buffer_len-1) < 0 ) {
+    if ( read(client, sock_data, g_max_buffer_len-1) < 0 ) {
       perror("socket read ERROR");
-      close(socket_client);
-      close(socket_server);
+      close(client);
+      close(server);
       continue;
     }
     bzero(c_ipaddr, 64);
@@ -618,7 +618,7 @@ int linmain(char *ak) {
     get_client_ip((struct sockaddr*)&cli_addr, c_ipaddr, 64);
 
     if ( ak_len > 0 )
-      allocate_key_buffer(&key_t, socket_data, ak_len);
+      allocate_key_buffer(&key_t, sock_data, ak_len);
 
     /* pulse string */
     char* ps;
@@ -632,7 +632,7 @@ int linmain(char *ak) {
 
       /* compile pulse string and send back */
       ps = make_pulse_string();
-      if ( write(socket_client, ps, strlen(ps)) < 0 )
+      if ( write(client, ps, strlen(ps)) < 0 )
         perror("socket write ERROR");
       else
         printf("%s => %s\n", ps, c_ipaddr);
@@ -640,12 +640,12 @@ int linmain(char *ak) {
     }
     else
     {
-      printf("invalid authority key (%s) provided by client (%s)\n", socket_data, c_ipaddr);
+      printf("invalid authority key (%s) provided by client (%s)\n", sock_data, c_ipaddr);
     }
     if ( ak_len > 0 )
       free(key_t);
-    close(socket_client);
-    close(socket_server);
+    close(client);
+    close(server);
     sleep_ms(200);
   }
   return 0;

@@ -444,7 +444,6 @@ int winmain(char *ak)
   }
 
   /* repeat */
-  uint32_t n;
   while(1)
   {
     printf("awaiting connection(s)...\n");
@@ -493,8 +492,8 @@ int winmain(char *ak)
 
           /* compile a pulse string and send back to the client */
           char *ps = make_pulse_string();
-          n = send(responder, ps, strlen(ps), 0);
-          if ( n != 0 )
+
+          if ( send(responder, ps, strlen(ps), 0) != SOCKET_ERROR )
             printf("%s => %s\n", ps, c_ipaddr);
           free(ps);
         }

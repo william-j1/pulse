@@ -29,7 +29,7 @@ DEPLOYMENT NOTES:
 #ifdef _WIN64
 
 /*
-compile on windows: gcc server.c -o pulse.exe -lpsapi -lws2_32
+compile on windows: gcc server.c -o pulse.exe -lpsapi -lws2_32 -lpdh
 */
 
 #include <winsock2.h>
@@ -37,6 +37,8 @@ compile on windows: gcc server.c -o pulse.exe -lpsapi -lws2_32
 #include <windows.h>
 #include <tchar.h>
 #include <psapi.h>
+#include <pdh.h>
+#include <pdhmsg.h>
 
 #elif __linux__
 
@@ -217,27 +219,30 @@ uint64_t available_space() {
 #endif
 }
 
-/* current cpu load using prior tick computation */
+/* accurate percentile for cpu usage */
 double cpu_load()
 {
 #ifdef _WIN64
-  FILETIME it; /* idle time */
-  FILETIME kt; /* kernel time */
-  FILETIME ut; /* user time */
-  if ( GetSystemTimes(&it, &kt, &ut) ) {
-    static uint64_t previousTotalTicks = 0;
-    static uint64_t previousIdleTicks = 0;
-    uint64_t idleTicks = (((uint64_t)(it.dwHighDateTime))<<32)|((uint64_t)it.dwLowDateTime);
-    uint64_t totalTicks = (((uint64_t)(kt.dwHighDateTime))<<32)|((uint64_t)kt.dwLowDateTime);
-    totalTicks += (((uint64_t)(ut.dwHighDateTime))<<32)|((uint64_t)ut.dwLowDateTime);
-    uint64_t ttd = totalTicks - previousTotalTicks;
-    uint64_t itd = idleTicks - previousIdleTicks;
-    double delta = (ttd > 0) ? ((double)itd)/ttd : 0;
-    previousTotalTicks = totalTicks;
-    previousIdleTicks = idleTicks;
-    return 1.0 - delta;
+  /*
+  apparently {HQUERY, HCOUNTER, PDH_HQUERY, 
+  PDH_HCOUNTER} belong to the same family :)
+  */
+  HANDLE q;
+  HANDLE c;
+  PDH_FMT_COUNTERVALUE cv;
+  if (PdhOpenQuery(NULL, 0, &q) != ERROR_SUCCESS)
+      return 0.0;
+  if (PdhAddCounter(q, TEXT("\\Processor Information(_Total)\\% Processor Utility"), 0, &c) != ERROR_SUCCESS) {
+      PdhCloseQuery(q);
+      return 0.0;
   }
-  return 0.0;
+  PdhCollectQueryData(q);
+  sleep_ms(200);
+  PdhCollectQueryData(q);
+  if (PdhGetFormattedCounterValue(c, PDH_FMT_DOUBLE, NULL, &cv) != ERROR_SUCCESS)
+    return 0.0;
+  PdhCloseQuery(q);
+  return cv.doubleValue / 100.0;
 #elif __linux__
   prev_stats = curr_stats;
   if ( get_cpu_stats(&curr_stats) != 0 )

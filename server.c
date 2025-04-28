@@ -544,9 +544,6 @@ int linmain(char *ak) {
   /* server and client addr structs */
   struct sockaddr_in serv_addr, cli_addr;
 
-  /* int buffer */
-  int32_t n;
-
   /* ip address buffer */
   char c_ipaddr[64];
 
@@ -604,9 +601,7 @@ int linmain(char *ak) {
     bzero(socket_data, g_max_buffer_len);
 
     /* read data chunk */
-    n = read(socket_client, socket_data, g_max_buffer_len-1);
-
-    if ( n < 0 ) {
+    if ( read(socket_client, socket_data, g_max_buffer_len-1) < 0 ) {
       perror("socket read ERROR");
       close(socket_client);
       close(socket_server);
@@ -629,9 +624,7 @@ int linmain(char *ak) {
 
       /* compile pulse string and send back */
       ps = make_pulse_string();
-      n = write(socket_client, ps, strlen(ps));
-  
-      if ( n < 0 )
+      if ( write(socket_client, ps, strlen(ps)) < 0 )
         perror("socket write ERROR");
       else
         printf("%s => %s\n", ps, c_ipaddr);

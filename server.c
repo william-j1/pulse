@@ -488,7 +488,8 @@ int winmain(char *ak)
           char *c_ipaddr = inet_ntoa(sa.sin_addr);
 
           /* server-side logs visible through a screen session */
-          printf("valid authority key provided by client: %s\n", c_ipaddr);
+          if ( ak_len > 0 )
+            printf("valid authority key provided by client: %s\n", c_ipaddr);
 
           /* compile a pulse string and send back to the client */
           char *ps = make_pulse_string();
@@ -553,6 +554,9 @@ int linmain(char *ak) {
   /* socket option preference */
   int opt = 1;
   
+  /* length of authority key */
+  uint16_t ak_len = strlen(ak);
+
   /* poll the cpu */
   get_cpu_stats(&curr_stats);
   sleep(1);
@@ -619,9 +623,10 @@ int linmain(char *ak) {
 
     /* check authoriy key given by client is 
        equal to the key defined in this instance */
-    if ( strlen(ak) == 0 || strcmp(socket_data, ak) == 0 )
+    if ( ak_len == 0 || strcmp(socket_data, ak) == 0 )
     {
-      printf("valid authority key (%s) provided by client (%s)\n", ak, c_ipaddr);
+      if ( ak_len > 0 )
+        printf("valid authority key (%s) provided by client (%s)\n", ak, c_ipaddr);
 
       /* compile pulse string and send back */
       ps = make_pulse_string();

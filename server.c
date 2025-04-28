@@ -179,7 +179,7 @@ void sleep_ms(uint32_t milliseconds) {
 }
 
 /* available memory in kb */
-uint32_t available_memory() {
+uint64_t available_memory() {
 #ifdef _WIN32
   MEMORYSTATUSEX mi;
   mi.dwLength = sizeof(mi);
@@ -191,8 +191,8 @@ uint32_t available_memory() {
     return 0;
   char line_t[256];
   while (fgets(line_t, sizeof(line_t), frd)) {
-    uint32_t frv;
-    if (sscanf(line_t, "MemAvailable: %d kB", &frv) == 1) {
+    uint64_t frv;
+    if (sscanf(line_t, "MemAvailable: %llu kB", &frv) == 1) {
       fclose(frd);
       return frv;
     }

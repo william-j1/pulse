@@ -358,6 +358,14 @@ char* make_pulse_string()
   return ps;
 }
 
+/* allocates memory for a fixed length comparison */
+void allocate_key_buffer(char **key_t, const char *sock_data, uint16_t ak_len)
+{
+  *key_t = (char*)malloc((ak_len+1) * sizeof(char));
+  strncpy(*key_t, sock_data, ak_len);
+  (*key_t)[ak_len] = '\0'; // attach null terminator
+}
+
 #ifdef _WIN64
 /* entry point for windows */
 int winmain(char *ak)
@@ -383,7 +391,7 @@ int winmain(char *ak)
   uint32_t bc = 0;
 
   /* null terminated key buffer */
-  char *keybuffer_t = NULL;
+  char *key_t = NULL;
 
   /* length of authority key */
   uint16_t ak_len = strlen(ak);
@@ -471,16 +479,11 @@ int winmain(char *ak)
       if ( ak_len == 0 || bc >= ak_len )
       {
         if ( ak_len > 0 )
-        {
-          /* length specific comparison */
-          keybuffer_t = (char*)malloc((ak_len+1) * sizeof(char));
-          strncpy(keybuffer_t, socket_data, ak_len);
-          keybuffer_t[ak_len] = '\0'; // attach null terminator
-        }
+          allocate_key_buffer(&key_t, socket_data, ak_len);
 
         /* check authority key given by client is 
            equal to the key defined in this instance */
-        if ( ak_len == 0 || strcmp(keybuffer_t, ak) == 0 )
+        if ( ak_len == 0 || strcmp(key_t, ak) == 0 )
         {
           /* pull ip */
           char *c_ipaddr = inet_ntoa(sa.sin_addr);
@@ -497,7 +500,7 @@ int winmain(char *ak)
           free(ps);
         }
         if ( ak_len > 0 )
-          free(keybuffer_t);
+          free(key_t);
         closesocket(responder);
         shutdown(responder, SD_BOTH);
         bc = 0;
@@ -553,7 +556,7 @@ int linmain(char *ak) {
   uint16_t ak_len = strlen(ak);
 
   /* null terminated key buffer */
-  char *keybuffer_t = NULL;
+  char *key_t = NULL;
 
   /* poll the cpu */
   get_cpu_stats(&curr_stats);
@@ -615,19 +618,14 @@ int linmain(char *ak) {
     get_client_ip((struct sockaddr*)&cli_addr, c_ipaddr, 64);
 
     if ( ak_len > 0 )
-    {
-      /* length specific comparison */
-      keybuffer_t = (char*)malloc((ak_len+1) * sizeof(char));
-      strncpy(keybuffer_t, socket_data, ak_len);
-      keybuffer_t[ak_len] = '\0'; // attach null terminator
-    }
+      allocate_key_buffer(&key_t, socket_data, ak_len);
 
     /* pulse string */
     char* ps;
 
     /* check authoriy key given by client is 
        equal to the key defined in this instance */
-    if ( ak_len == 0 || strcmp(keybuffer_t, ak) == 0 )
+    if ( ak_len == 0 || strcmp(key_t, ak) == 0 )
     {
       if ( ak_len > 0 )
         printf("valid authority key (%s) provided by client (%s)\n", ak, c_ipaddr);
@@ -645,7 +643,7 @@ int linmain(char *ak) {
       printf("invalid authority key (%s) provided by client (%s)\n", socket_data, c_ipaddr);
     }
     if ( ak_len > 0 )
-      free(keybuffer_t);
+      free(key_t);
     close(socket_client);
     close(socket_server);
     sleep_ms(200);

@@ -1,0 +1,6 @@
+
+psapi - enumeration of processes - microsoft.com/en-us/windows/win32/psapi/psapi-functions
+ws2_32 - service provider sockets - microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-socket
+pdh - access to performance counters - microsoft.com/en-us/windows/win32/api/pdh/
+
+compilation on windows: gcc ENTRY -o OUTPUT -lpsapi -lws2_32 -lpdh

@@ -1,6 +1,6 @@
 /*
 
-Copyright 2024 William Johnson williamj.inbox@gmail.com
+Copyright 2024 William Johnson <williamj.inbox@gmail.com>
 
 Licensed under the Apache License, Version 2.0 (the 
 "License"); you may not use this file except in compliance 

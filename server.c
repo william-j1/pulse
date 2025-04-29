@@ -142,11 +142,9 @@ double cpu_load()
   PdhCloseQuery(q);
   return cv.doubleValue / 100.0;
 #elif __linux__
-  prev_stats = curr_stats;
-  if ( get_cpu_stats(&curr_stats) != 0 )
-    return 0;
-  double usage = calculate_cpu_usage(&prev_stats, &curr_stats);
-  return usage;
+  if ( !update_cpu_stats() )
+    return 0.0;
+  return get_cpu_usage();
 #endif
 }
 
@@ -184,7 +182,7 @@ uint8_t is_database_running() {
   return 0;
 #elif __linux__
   for ( q = 0; q < g_process_count; q++ ) {
-    if ( process_id(g_db_process_list[q]) != -1 )
+    if ( get_process_id(g_db_process_list[q]) != -1 )
       return 1;
   }
   return 0;
@@ -214,9 +212,9 @@ uint64_t total_physical_memory() {
   GlobalMemoryStatusEx(&mi);
   return mi.ullTotalPhys / g_bytes_per_kb;
 #elif __linux__
-  int error = sysinfo(&s_info);
+  int error = sysinfo(&sys_info);
   if ( error == 0 )
-    return s_info.totalram/g_bytes_per_kb;
+    return sys_info.totalram/g_bytes_per_kb;
   return 0;
 #endif
 }
@@ -226,9 +224,9 @@ uint32_t uptime_in_secs() {
 #ifdef _WIN64
   return GetTickCount() / 1000;
 #elif __linux__
-  int error = sysinfo(&s_info);
+  int error = sysinfo(&sys_info);
   if ( error == 0 )
-    return s_info.uptime;
+    return sys_info.uptime;
   return 0;
 #endif
 }
@@ -446,7 +444,7 @@ int linmain(char *ak) {
   char *key_t = NULL;
 
   /* poll the cpu */
-  get_cpu_stats(&curr_stats);
+  update_cpu_stats();
   sleep(1);
 
   while(1)

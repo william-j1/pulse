@@ -2,7 +2,7 @@
 
 Cross platform server to return diagnostic metrics to clients which can periodically probe its instance over TCP/IP.
 
-![screenshot](client.png)
+![screenshot](docs/screen.png)
 
 ## Metrics
 

@@ -39,7 +39,7 @@ DEPLOYMENT NOTES:
 #elif __linux__
 
 #include <stdlib.h>
-#include <linux/kernel.h> /* for struct sysinfo */
+#include <linux/kernel.h>
 #include <sys/sysinfo.h>
 #include <sys/statvfs.h>
 #include <dirent.h>

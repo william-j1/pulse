@@ -246,7 +246,7 @@ void allocate_key_buffer(char **key_t, const char *sock_data, uint16_t ak_len)
 
 #ifdef _WIN64
 /* entry point for windows */
-int winmain(char *ak)
+int win(char *ak)
 {
   /* winsock library */
   WSADATA wsa_data;
@@ -394,7 +394,7 @@ int winmain(char *ak)
   return 0;
 }
 #elif __linux__
-int linmain(char *ak) {
+int lin(char *ak) {
 
   /* file descriptors */
   int32_t server, client;
@@ -561,8 +561,8 @@ int main(int argc, char *argv[])
   else
     printf("Key-less mode, any client can probe this server\n\n");
 #ifdef _WIN64
-  return winmain(ak);
+  return win(ak);
 #elif __linux__
-  return linmain(ak);
+  return lin(ak);
 #endif
 }

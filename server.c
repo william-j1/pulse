@@ -1,6 +1,5 @@
 /*
-
-Copyright 2024 William Johnson <williamj.inbox@gmail.com>
+Copyright 2025 William Johnson <williamj.inbox@gmail.com>
 
 Licensed under the Apache License, Version 2.0 (the 
 "License"); you may not use this file except in compliance 
@@ -20,7 +19,6 @@ DEPLOYMENT NOTES:
 
 2. Keep a secure note of all keys you generate for daemon deployment
    and configure your client to point to the location of your server(s).
-
 */
 #include <stdio.h>
 #include <stdint.h>

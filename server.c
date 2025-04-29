@@ -244,7 +244,7 @@ double cpu_load()
 }
 
 /* signals that a live database is running */
-uint8_t database_running() {
+uint8_t is_database_running() {
   uint32_t q = 0;
 #ifdef _WIN64
   DWORD processIds[1024], bytesNeeded, procCount;
@@ -336,7 +336,7 @@ char* make_pulse_string()
   char *ps = (char*)malloc(g_max_buffer_len * sizeof(char));
   int psi = snprintf(ps, 100, "%.4f", cpu_load());
   psi += snprintf(ps+psi, g_max_buffer_len-psi, "%s", g_delimitor);
-  psi += snprintf(ps+psi, g_max_buffer_len-psi, "%d", database_running());
+  psi += snprintf(ps+psi, g_max_buffer_len-psi, "%d", is_database_running());
   psi += snprintf(ps+psi, g_max_buffer_len-psi, "%s", g_delimitor);
   psi += snprintf(ps+psi, g_max_buffer_len-psi, "%d", uptime_in_secs());
   psi += snprintf(ps+psi, g_max_buffer_len-psi, "%s", g_delimitor);

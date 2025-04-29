@@ -49,8 +49,8 @@ static const uint16_t g_bytes_per_kb = 1024;
 /* number of db processes to enquire */
 static uint8_t g_process_count;
 
-/* process name list */
-static const char *g_db_process_list[] = {
+/* process check for list */
+static const char *g_process_check_for[] = {
   "mysql", 
   "mysqld.exe", 
   "mysqld", 
@@ -191,13 +191,13 @@ uint8_t is_database_running() {
                             sizeof(szProcessName)/sizeof(TCHAR));
           CloseHandle(hProcess);
           for ( q = 0; q < g_process_count; q++ ) {
-            if ( strcmp(g_db_process_list[q], szProcessName) == 0 )
+            if ( strcmp(g_process_check_for[q], szProcessName) == 0 )
               return 1;
   }}}}}
   return 0;
 #elif __linux__
   for ( q = 0; q < g_process_count; q++ ) {
-    if ( get_process_id(g_db_process_list[q]) != -1 )
+    if ( get_process_id(g_process_check_for[q]) != -1 )
       return 1;
   }
   return 0;
@@ -564,13 +564,13 @@ uint8_t extract_key(char *str, size_t n)
 
 /*
 sums the number of process names provided in 
-g_db_process_list meaning its not necessary to 
+g_process_check_for meaning its not necessary to 
 hardcode the number of processes in the array
 */
 uint8_t process_names_count()
 {
   uint8_t c = 0;
-  while ( g_db_process_list[++c] != NULL )
+  while ( g_process_check_for[++c] != NULL )
     continue;
   return c;
 }

@@ -14,11 +14,9 @@ to address these key infrastructural concerns.
 
 DEPLOYMENT NOTES:
 
-1. Change the g_daemon_key value.
+1. Change the g_daemon_port to prevent autonomous landers.
 
-2. Change the g_daemon_port to prevent autonomous landers.
-
-3. Keep a secure note of all keys you generate for daemon deployment
+2. Keep a secure note of all keys you generate for daemon deployment
    and configure your client to point to the location of your server(s).
 
 */
@@ -132,10 +130,6 @@ pid_t process_id(const char *pname) {
 #if _POSIX_C_SOURCE >= 199309L
 #include <time.h> // +nanosleep
 #endif
-
-/* daemon key for pulse - this is the key which the clients must
-   provide for the connection to be successful */
-static const char g_daemon_key[] = "";
 
 /* daemon port - this is the port bind, the server (this) listens
    and accepts client requests to this port */
@@ -685,7 +679,7 @@ accepts override using the -k flag: ./server -kKEY_TEXT
 int main(int argc, char *argv[])
 {
   argc -= 1;
-  char *ak = (char *)g_daemon_key;
+  char *ak = "";
   if ( argc >= 1 ) {
     if ( strlen(argv[1]) >= 3 ) {
       if ( argv[1][0] == '-' && argv[1][1] == 'k' ) {

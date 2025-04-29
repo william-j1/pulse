@@ -465,7 +465,7 @@ int linmain(char *ak) {
   while(1)
   {
     //ip_addr
-    ip_addr = (char*)malloc(INET6_ADDRSTRLEN * sizeof(char));
+    ip_addr = (char*)malloc((INET6_ADDRSTRLEN+1) * sizeof(char));
 
   	server = socket(AF_INET, SOCK_STREAM, 0);
   	if ( server < 0 ) {

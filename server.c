@@ -49,7 +49,6 @@ compile on windows: gcc server.c -o pulse.exe -lpsapi -lws2_32 -lpdh
 #include <dirent.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include <stdio.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>

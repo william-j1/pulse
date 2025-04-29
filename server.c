@@ -432,7 +432,7 @@ int linmain(char *ak) {
   /* addr struct length */
   socklen_t client_addr_length;
 
-  /* socket data buffer length */
+  /* socket data buffered length */
   char sock_data[g_max_buffer_len];
 
   /* server and client addr structs */
@@ -456,7 +456,6 @@ int linmain(char *ak) {
 
   while(1)
   {
-    //ip_addr
     ip_addr = (char*)malloc((INET6_ADDRSTRLEN+1) * sizeof(char));
 
   	server = socket(AF_INET, SOCK_STREAM, 0);

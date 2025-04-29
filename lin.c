@@ -22,10 +22,20 @@ const uint8_t get_cpu_stats(struct cpu_stats* stats)
   FILE* file = fopen("/proc/stat", "r");
   if (file == NULL)
     return 0;
-  fscanf(file, "cpu %llu %llu %llu %llu %llu %llu %llu %llu %llu %llu",
-         &stats->user, &stats->nice, &stats->system, &stats->idle,
-         &stats->iowait, &stats->irq, &stats->softirq, &stats->steal,
-         &stats->guest, &stats->guest_nice);
+  fscanf(
+    file, 
+    "cpu %" PRIu64 " %" PRIu64 " %" PRIu64 " %" PRIu64 " %" PRIu64 " %" PRIu64 " %" PRIu64 " %" PRIu64 " %" PRIu64 " %" PRIu64 "\n",
+    &stats->user, 
+    &stats->nice, 
+    &stats->system, 
+    &stats->idle,
+    &stats->iowait,
+    &stats->irq,
+    &stats->softirq,
+    &stats->steal,
+    &stats->guest,
+    &stats->guest_nice
+  );
   fclose(file);
   return 1;
 }

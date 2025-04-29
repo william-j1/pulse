@@ -11,6 +11,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <inttypes.h>
 
 #ifndef __LIN_H
 #define __LIN_H

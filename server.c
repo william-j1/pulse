@@ -32,10 +32,6 @@ DEPLOYMENT NOTES:
 #include "lin.h"
 #endif
 
-#if _POSIX_C_SOURCE >= 199309L
-#include <time.h> // +nanosleep
-#endif
-
 /* daemon port - this is the port bind, the server (this) listens
    and accepts client requests to this port */
 static const char g_daemon_port[] = "1382";
@@ -78,18 +74,14 @@ static const char g_mount_point[] = "/";
 #endif
 
 /* sleep function in milliseconds */
-void sleep_ms(uint32_t milliseconds) {
+void sleep_ms(uint32_t ms) {
 #ifdef WIN32
-    Sleep(milliseconds);
-#elif _POSIX_C_SOURCE >= 199309L
+    Sleep(ms);
+#elif __linux__
     struct timespec ts;
-    ts.tv_sec = milliseconds / 1000;
-    ts.tv_nsec = (milliseconds % 1000) * 1000000;
+    ts.tv_sec = ms / 1000;
+    ts.tv_nsec = (ms % 1000) * 1000000;
     nanosleep(&ts, NULL);
-#else
-    if (milliseconds >= 1000)
-      sleep(milliseconds / 1000);
-    usleep((milliseconds % 1000) * 1000);
 #endif
 }
 

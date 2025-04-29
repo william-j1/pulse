@@ -12,6 +12,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <inttypes.h>
+#include <time.h>
 
 #ifndef __LIN_H
 #define __LIN_H

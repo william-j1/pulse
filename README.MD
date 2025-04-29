@@ -44,4 +44,4 @@ Omit the override by simply invoking the server without a key. By default, the s
 
 ## Deployment Notes
 
-Change (g_daemon_key, g_daemon_port) to match your organisations requirements.
+Change (g_daemon_port) to match your organisations requirements.

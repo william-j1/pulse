@@ -216,10 +216,10 @@ double cpu_load()
 #ifdef _WIN64
   /*
   apparently {HQUERY, HCOUNTER, PDH_HQUERY, 
-  PDH_HCOUNTER} belong to the same family :)
+  PDH_HCOUNTER} belong to the same family
   */
-  HANDLE q;
   HANDLE c;
+  HANDLE q;
   PDH_FMT_COUNTERVALUE cv;
   if (PdhOpenQuery(NULL, 0, &q) != ERROR_SUCCESS)
       return 0.0;

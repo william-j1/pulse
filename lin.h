@@ -42,7 +42,7 @@ static struct sysinfo sys_info;
    cpu timings */
 static struct cpu_stats cpu_p, cpu_c;
 
-const char *get_client_ip(const struct sockaddr *sa, char *ipstr, uint16_t mlen);
+const char *get_client_ip(const struct sockaddr *sa, char *ipstr);
 const uint8_t get_cpu_stats(struct cpu_stats* stats);
 const double get_cpu_usage();
 const pid_t get_process_id(const char *pname);

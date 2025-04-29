@@ -447,7 +447,7 @@ int linmain(char *ak) {
   struct sockaddr_in serv_addr, cli_addr;
 
   /* ip address buffer */
-  char c_ipaddr[64];
+  char *ip_addr = NULL;
 
   /* socket option preference */
   int opt = 1;
@@ -464,6 +464,9 @@ int linmain(char *ak) {
 
   while(1)
   {
+    //ip_addr
+    ip_addr = (char*)malloc(INET6_ADDRSTRLEN * sizeof(char));
+
   	server = socket(AF_INET, SOCK_STREAM, 0);
   	if ( server < 0 ) {
   		perror("socket opening ERROR");
@@ -512,10 +515,10 @@ int linmain(char *ak) {
       close(server);
       continue;
     }
-    bzero(c_ipaddr, 64);
+    bzero(ip_addr, INET6_ADDRSTRLEN);
 
     /* ipv6 addresses consist of a maximum 39 characters */
-    get_client_ip((struct sockaddr*)&cli_addr, c_ipaddr, 64);
+    get_client_ip((struct sockaddr*)&cli_addr, ip_addr);
 
     if ( ak_len > 0 )
       allocate_key_buffer(&key_t, sock_data, ak_len);
@@ -528,22 +531,23 @@ int linmain(char *ak) {
     if ( ak_len == 0 || strcmp(key_t, ak) == 0 )
     {
       if ( ak_len > 0 )
-        printf("valid authority key (%s) provided by client (%s)\n", ak, c_ipaddr);
+        printf("valid authority key (%s) provided by client (%s)\n", ak, ip_addr);
 
       /* compile pulse string and send back */
       ps = make_pulse_string();
       if ( write(client, ps, strlen(ps)) < 0 )
         perror("socket write ERROR");
       else
-        printf("%s => %s\n", ps, c_ipaddr);
+        printf("%s => %s\n", ps, ip_addr);
       free(ps);
     }
     else
     {
-      printf("invalid authority key (%s) provided by client (%s)\n", sock_data, c_ipaddr);
+      printf("invalid authority key (%s) provided by client (%s)\n", sock_data, ip_addr);
     }
     if ( ak_len > 0 )
       free(key_t);
+    free(ip_addr);
     close(client);
     close(server);
     sleep_ms(200);

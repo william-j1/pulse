@@ -1,20 +1,20 @@
 #include "lin.h"
 
-const char *get_client_ip(const struct sockaddr *sa, char *ipstr, uint16_t mlen)
+const char *get_client_ip(const struct sockaddr *sa, char *ip_addr)
 {
-	switch(sa->sa_family)
+  switch(sa->sa_family)
   {
-		case AF_INET:
-		  inet_ntop(AF_INET, &(((struct sockaddr_in*)sa)->sin_addr), ipstr, mlen);
-		  break;
-		case AF_INET6:
-		  inet_ntop(AF_INET6, &(((struct sockaddr_in6*)sa)->sin6_addr), ipstr, mlen);
-		  break;
-		default:
-		  strncpy(ipstr, "Unknown AF", mlen);
-		  return NULL;
-	}
-	return ipstr;
+    case AF_INET:
+      inet_ntop(AF_INET, &(((struct sockaddr_in*)sa)->sin_addr), ip_addr, INET6_ADDRSTRLEN);
+      break;
+    case AF_INET6:
+      inet_ntop(AF_INET6, &(((struct sockaddr_in6*)sa)->sin6_addr), ip_addr, INET6_ADDRSTRLEN);
+      break;
+    default:
+      strncpy(ip_addr, "Unknown AF", INET6_ADDRSTRLEN);
+      return NULL;
+  }
+  return ip_addr;
 }
 
 const uint8_t get_cpu_stats(struct cpu_stats* stats)

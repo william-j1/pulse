@@ -49,8 +49,23 @@ static const uint16_t g_bytes_per_kb = 1024;
 /* number of db processes to enquire */
 static uint8_t g_process_count;
 
-/* list of process names to expect, if you want to add game servers, add the process name in this array */
-static const char *g_db_process_list[] = {"mysql", "mysqld.exe", "mysqld", "mariadbd", "memcached", "db2sysc", "cassandra", "redis-server", "mongod", "mongos", "tnslsnr", "oracle", "sqlservr", "postgres"};
+/* process name list */
+static const char *g_db_process_list[] = {
+  "mysql", 
+  "mysqld.exe", 
+  "mysqld", 
+  "mariadbd", 
+  "memcached", 
+  "db2sysc", 
+  "cassandra", 
+  "redis-server", 
+  "mongod", 
+  "mongos", 
+  "tnslsnr", 
+  "oracle", 
+  "sqlservr", 
+  "postgres"
+};
 
 /* internal buffer length to handle network-io */
 static const uint16_t g_max_buffer_len = 512;

@@ -13,6 +13,9 @@ software distributed under the License is distributed on an
 either express or implied. See the License for the specific 
 language governing permissions and limitations under the License.
 */
+#ifndef __LIN_H
+#define __LIN_H
+
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
@@ -28,9 +31,6 @@ language governing permissions and limitations under the License.
 #include <arpa/inet.h>
 #include <inttypes.h>
 #include <time.h>
-
-#ifndef __LIN_H
-#define __LIN_H
 
 /*
 https://www.man7.org/linux/man-pages/man5/proc_stat.5.html
@@ -58,7 +58,7 @@ static struct sysinfo sys_info;
    cpu timings */
 static struct cpu_stats cpu_p, cpu_c;
 
-const char *get_client_ip(const struct sockaddr *sa, char *ipstr);
+const char *get_client_ip(const struct sockaddr *sa, char *ip_addr);
 const uint8_t get_cpu_stats(struct cpu_stats* stats);
 const double get_cpu_usage();
 const pid_t get_process_id(const char *pname);

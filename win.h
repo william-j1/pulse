@@ -13,6 +13,9 @@ software distributed under the License is distributed on an
 either express or implied. See the License for the specific 
 language governing permissions and limitations under the License.
 */
+#ifndef __WIN_H
+#define __WIN_H
+
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <windows.h>
@@ -20,3 +23,8 @@ language governing permissions and limitations under the License.
 #include <psapi.h>
 #include <pdh.h>
 #include <pdhmsg.h>
+#include <stdint.h>
+
+const uint8_t has_process(const char *p_list[], const uint8_t p_count);
+
+#endif // __WIN_H

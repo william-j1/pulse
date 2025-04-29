@@ -40,7 +40,7 @@ static const char g_delimitor[] = ":";
 /* bytes in kb, base-2 interpretation as opposed to SI units */
 static const uint16_t g_bytes_per_kb = 1024;
 
-/* number of db processes to enquire */
+/* number of db processes to query */
 static uint8_t g_process_count;
 
 /* process check for list */
@@ -155,38 +155,10 @@ double cpu_load()
 
 /* signals that a live database is running */
 uint8_t is_database_running() {
-  uint32_t q = 0;
 #ifdef _WIN64
-  DWORD processIds[1024], bytesNeeded, procCount;
-  HANDLE hProcess = NULL;
-  TCHAR szProcessName[MAX_PATH] = TEXT("<unknown>");
-  uint32_t p = 0;
-  if ( !EnumProcesses(processIds, sizeof(processIds), &bytesNeeded) )
-    return 0;
-  procCount = bytesNeeded / sizeof(DWORD);
-  for ( ; p < procCount; p++ ) {
-    if( processIds[p] != 0 ) {
-      hProcess = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ,
-                             FALSE,
-                             processIds[p]);
-      if (hProcess != NULL)
-      {
-        HMODULE hMod;
-        DWORD cbNeeded;
-        if ( EnumProcessModules(hProcess, &hMod, sizeof(hMod), &cbNeeded) )
-        {
-          GetModuleBaseName(hProcess,
-                            hMod,
-                            szProcessName,
-                            sizeof(szProcessName)/sizeof(TCHAR));
-          CloseHandle(hProcess);
-          for ( q = 0; q < g_process_count; q++ ) {
-            if ( strcmp(g_process_check_for[q], szProcessName) == 0 )
-              return 1;
-  }}}}}
-  return 0;
+  return has_process(g_process_check_for, g_process_count);
 #elif __linux__
-  for ( q = 0; q < g_process_count; q++ ) {
+  for ( uint32_t q = 0; q < g_process_count; q++ ) {
     if ( get_process_id(g_process_check_for[q]) != -1 )
       return 1;
   }

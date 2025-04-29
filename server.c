@@ -28,10 +28,6 @@ DEPLOYMENT NOTES:
 
 #ifdef _WIN64
 
-/*
-compile on windows: gcc server.c -o pulse.exe -lpsapi -lws2_32 -lpdh
-*/
-
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <windows.h>

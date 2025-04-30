@@ -62,8 +62,8 @@ static const char *g_process_check_for[] = {
   "postgres"
 };
 
-/* internal buffer length to handle network-io */
-static const uint16_t g_max_buffer_len = 512;
+/* max buffer length for data-io */
+static const uint16_t g_max_len = 512;
 
 static void *g_handle;
 static void *g_handle_object;
@@ -219,24 +219,24 @@ char* make_pulse_string()
   uint64_t free_ds = available_space();
   uint64_t total_mem = total_physical_memory();
   uint64_t free_mem = available_memory();
-  char *ps = (char*)malloc(g_max_buffer_len * sizeof(char));
+  char *ps = (char*)malloc(g_max_len * sizeof(char));
   int psi = snprintf(ps, 100, "%.4f", cpu_load());
-  psi += snprintf(ps+psi, g_max_buffer_len-psi, "%s", g_delimitor);
-  psi += snprintf(ps+psi, g_max_buffer_len-psi, "%d", is_database_running());
-  psi += snprintf(ps+psi, g_max_buffer_len-psi, "%s", g_delimitor);
-  psi += snprintf(ps+psi, g_max_buffer_len-psi, "%d", uptime_in_secs());
-  psi += snprintf(ps+psi, g_max_buffer_len-psi, "%s", g_delimitor);
-  psi += snprintf(ps+psi, g_max_buffer_len-psi, "%llu", total_ds);
-  psi += snprintf(ps+psi, g_max_buffer_len-psi, "%s", g_delimitor);
-  psi += snprintf(ps+psi, g_max_buffer_len-psi, "%llu", free_ds);
-  psi += snprintf(ps+psi, g_max_buffer_len-psi, "%s", g_delimitor);
-  psi += snprintf(ps+psi, g_max_buffer_len-psi, "%.4f", 1.0-(float)free_ds/total_ds);
-  psi += snprintf(ps+psi, g_max_buffer_len-psi, "%s", g_delimitor);
-  psi += snprintf(ps+psi, g_max_buffer_len-psi, "%d", total_mem);
-  psi += snprintf(ps+psi, g_max_buffer_len-psi, "%s", g_delimitor);
-  psi += snprintf(ps+psi, g_max_buffer_len-psi, "%d", free_mem);
-  psi += snprintf(ps+psi, g_max_buffer_len-psi, "%s", g_delimitor);
-  psi += snprintf(ps+psi, g_max_buffer_len-psi, "%.4f", 1.0-(float)free_mem/total_mem);
+  psi += snprintf(ps+psi, g_max_len-psi, "%s", g_delimitor);
+  psi += snprintf(ps+psi, g_max_len-psi, "%d", is_database_running());
+  psi += snprintf(ps+psi, g_max_len-psi, "%s", g_delimitor);
+  psi += snprintf(ps+psi, g_max_len-psi, "%d", uptime_in_secs());
+  psi += snprintf(ps+psi, g_max_len-psi, "%s", g_delimitor);
+  psi += snprintf(ps+psi, g_max_len-psi, "%llu", total_ds);
+  psi += snprintf(ps+psi, g_max_len-psi, "%s", g_delimitor);
+  psi += snprintf(ps+psi, g_max_len-psi, "%llu", free_ds);
+  psi += snprintf(ps+psi, g_max_len-psi, "%s", g_delimitor);
+  psi += snprintf(ps+psi, g_max_len-psi, "%.4f", 1.0-(float)free_ds/total_ds);
+  psi += snprintf(ps+psi, g_max_len-psi, "%s", g_delimitor);
+  psi += snprintf(ps+psi, g_max_len-psi, "%d", total_mem);
+  psi += snprintf(ps+psi, g_max_len-psi, "%s", g_delimitor);
+  psi += snprintf(ps+psi, g_max_len-psi, "%d", free_mem);
+  psi += snprintf(ps+psi, g_max_len-psi, "%s", g_delimitor);
+  psi += snprintf(ps+psi, g_max_len-psi, "%.4f", 1.0-(float)free_mem/total_mem);
   return ps;
 }
 
@@ -269,25 +269,22 @@ PROCESS_CLIENT_FUNC
   uint16_t ak_len = strlen(tp->m_ak);
 
   /* socket data */
-  char sock_data[g_max_buffer_len];
-
-  /* max length of data chunk from on-going socket */
-  socklen_t sock_data_len = g_max_buffer_len;
+  char sock_data[g_max_len];
 
   char *ip_addr = NULL;
 
 #if __linux__
-  bzero(sock_data, g_max_buffer_len);
+  bzero(sock_data, g_max_len);
 #endif
 
   /* consistently repeat to capture on-going byte stream */
   do
   {
 #ifdef _WIN64
-    bc = recv(tp->m_responder, sock_data, sock_data_len, 0);
+    bc = recv(tp->m_responder, sock_data, (socklen_t)g_max_len, 0);
     ip_addr = inet_ntoa(tp->m_sa.sin_addr);
 #elif __linux__
-    bc = read(tp->m_responder, sock_data, g_max_buffer_len-1);
+    bc = read(tp->m_responder, sock_data, g_max_len-1);
     ip_addr = (char*)malloc((INET6_ADDRSTRLEN+1) * sizeof(char));
     bzero(ip_addr, INET6_ADDRSTRLEN);
     get_client_ip((struct sockaddr*)&tp->m_sa, ip_addr);

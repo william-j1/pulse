@@ -25,6 +25,26 @@ language governing permissions and limitations under the License.
 #include <pdhmsg.h>
 #include <stdint.h>
 
+/* threading property parameter */
+typedef struct
+{
+  /* authority key */
+  char *m_ak;
+
+  /* response socket */
+  SOCKET m_responder;
+
+  /* af addr/port */
+  struct sockaddr_in m_sa;
+
+  /* point to last */
+  HANDLE m_last;
+
+  /* point to this */
+  void *m_this;
+} TP;
+
+/* SOCKET (UINT_PTR) for server */
 static SOCKET g_listener = INVALID_SOCKET;
 
 const uint8_t has_process(const char *p_list[], const uint8_t p_count);

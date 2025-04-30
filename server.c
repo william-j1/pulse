@@ -247,27 +247,14 @@ void allocate_key_buffer(char **key_t, const char *sock_data, uint16_t ak_len)
   (*key_t)[ak_len] = '\0'; // attach null terminator
 }
 
-/* threading property parameter */
-typedef struct
-{
-  /* authority key */
-  char *m_ak;
+#if _WIN64
+#define PROCESS_CLIENT_FUNC DWORD WINAPI process_client(LPVOID lpParam)
+#elif __linux__
+#define PROCESS_CLIENT_FUNC DWORD WINAPI process_client(LPVOID lpParam)
+#endif
 
-  /* response socket */
-  SOCKET m_responder;
-
-  /* af addr/port */
-  struct sockaddr_in m_sa;
-
-  /* point to last */
-  HANDLE m_last;
-
-  /* point to this */
-  void *m_this;
-} TP;
-
-/* process the remain */
-DWORD WINAPI process_client(LPVOID lpParam)
+/* process the client */
+PROCESS_CLIENT_FUNC
 {
   TP *tp = (TP*)lpParam;
 
@@ -323,10 +310,8 @@ DWORD WINAPI process_client(LPVOID lpParam)
     }
   }
   while(bc > 0); /* terminates when byte count equal to zero */
-  if ( tp->m_last != NULL ) {
+  if ( tp->m_last != NULL )
     CloseHandle(tp->m_last);
-    printf("closed handle");
-  }
   free(tp);
   return 0;
 }
@@ -335,7 +320,7 @@ DWORD WINAPI process_client(LPVOID lpParam)
 /* entry point for windows */
 int win(char *ak)
 {
-  /* winsock library */
+  /* winsock */
   WSADATA wsa_data;
 
   /* address info structs */
@@ -397,19 +382,23 @@ int win(char *ak)
 
   g_handle = NULL;
 
-  /* repeat */
+  /* --- REPEAT */
   while(1)
   {
     printf("awaiting connection(s)...\n");
 
-    /* record address of client */
+    /* --- ADDR */
     struct sockaddr_in sa = {0};
-    socklen_t socklen = sizeof(sa);
+    socklen_t sock_len = sizeof(sa);
 
-    /* accept the connection */
-    SOCKET responder = accept(g_listener, (struct sockaddr *) &sa, &socklen);
+    /* --- ACCEPT */
+    SOCKET responder = accept(g_listener, (struct sockaddr *) &sa, &sock_len);
     if (responder == INVALID_SOCKET) {
       printf("accept failed with error: %d\n", WSAGetLastError());
+      if ( g_handle != NULL ) {
+        WaitForSingleObject(g_handle, 5000);
+        CloseHandle(g_handle);
+      }
       closesocket(g_listener);
       WSACleanup();
       return 1;
@@ -550,8 +539,6 @@ int lin(char *ak) {
 }
 #endif
 
-
-
 /* extracts a key from the command line argument */
 uint8_t extract_key(char *str, size_t n)
 {
@@ -575,10 +562,10 @@ uint8_t process_names_count()
   return c;
 }
 
+/* routine to cleanly exit */
 void clean_exit(int s)
 {
 #ifdef _WIN64
-  printf("clean exit triggered...\n");
   if ( g_handle != NULL )
   {
     WaitForSingleObject(g_handle, 5000);
@@ -606,7 +593,7 @@ int main(int argc, char *argv[])
   }}}
   g_process_count = process_names_count();
   
-  printf("Pulse Server... (CTRL+C to exit)\n\n");
+  printf("\nPulse Server... (CTRL+C to exit)\n");
   if ( strlen(ak) )
     printf("Authority key set to: %s\n\n", ak);
   else

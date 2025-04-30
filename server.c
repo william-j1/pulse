@@ -404,7 +404,6 @@ int win(char *ak)
     tp->m_responder = responder;
     tp->m_sa = sa;
     tp->m_last = g_handle;
-    tp->m_this = tp;
     g_handle = CreateThread(NULL, 0, process_client, (LPVOID)tp, 0, NULL);
   }
   return 0;

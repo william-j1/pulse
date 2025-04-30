@@ -39,9 +39,6 @@ typedef struct
 
   /* point to last */
   HANDLE m_last;
-
-  /* point to this */
-  void *m_this;
 } TP;
 
 /* SOCKET (UINT_PTR) for server */

@@ -258,16 +258,16 @@ PROCESS_CLIENT_FUNC
 {
   TP *tp = (TP*)lpParam;
 
-  /* byte count received */
+  /* byte count */
   uint32_t bc = 0;
 
-  /* null terminated key buffer */
+  /* key buffer */
   char *key_t = NULL;
 
-  /* length of authority key */
+  /* authority key length */
   uint16_t ak_len = strlen(tp->m_ak);
 
-  /* socket work variables */
+  /* socket data */
   char sock_data[g_max_buffer_len];
 
   /* max length of data chunk from on-going socket */
@@ -276,7 +276,6 @@ PROCESS_CLIENT_FUNC
   /* consistently repeat to capture on-going byte stream */
   do
   {
-    /* receive a data chunk up to the buffer length */
     bc = recv(tp->m_responder, sock_data, sock_data_len, 0);
 
     /* proceed if authority key provided unless key length is zero */
@@ -290,14 +289,9 @@ PROCESS_CLIENT_FUNC
       if ( ak_len == 0 || strcmp(key_t, tp->m_ak) == 0 )
       {
         char *ip_addr = inet_ntoa(tp->m_sa.sin_addr);
-
-        /* server-side logs visible through a screen session */
         if ( ak_len > 0 )
           printf("valid authority key provided by client: %s\n", ip_addr);
-
-        /* compile a pulse string and send back to the client */
         char *ps = make_pulse_string();
-
         if ( send(tp->m_responder, ps, strlen(ps), 0) != SOCKET_ERROR )
           printf("%s => %s\n", ps, ip_addr);
         free(ps);

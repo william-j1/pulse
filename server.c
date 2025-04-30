@@ -248,15 +248,15 @@ void allocate_key_buffer(char **key_t, const char *sock_data, uint16_t ak_len)
 }
 
 #if _WIN64
-#define PROCESS_CLIENT_FUNC DWORD WINAPI process_client(LPVOID lpParam)
+#define PROCESS_CLIENT_FUNC DWORD WINAPI process_client(LPVOID argument_t)
 #elif __linux__
-#define PROCESS_CLIENT_FUNC DWORD WINAPI process_client(LPVOID lpParam)
+#define PROCESS_CLIENT_FUNC void* process_client(void* argument_t)
 #endif
 
 /* process the client */
 PROCESS_CLIENT_FUNC
 {
-  TP *tp = (TP*)lpParam;
+  TP *tp = (TP*)argument_t;
 
   /* byte count */
   uint32_t bc = 0;
@@ -273,10 +273,24 @@ PROCESS_CLIENT_FUNC
   /* max length of data chunk from on-going socket */
   socklen_t sock_data_len = g_max_buffer_len;
 
+  char *ip_addr = NULL;
+
+#if __linux__
+  bzero(sock_data, g_max_buffer_len);
+#endif
+
   /* consistently repeat to capture on-going byte stream */
   do
   {
+#ifdef _WIN64
     bc = recv(tp->m_responder, sock_data, sock_data_len, 0);
+    ip_addr = inet_ntoa(tp->m_sa.sin_addr);
+#elif __linux__
+    bc = read(tp->m_responder, sock_data, g_max_buffer_len-1);
+    ip_addr = (char*)malloc((INET6_ADDRSTRLEN+1) * sizeof(char));
+    bzero(ip_addr, INET6_ADDRSTRLEN);
+    get_client_ip((struct sockaddr*)&tp->m_sa.sin_addr, ip_addr);
+#endif
 
     /* proceed if authority key provided unless key length is zero */
     if ( ak_len == 0 || bc >= ak_len )
@@ -288,24 +302,43 @@ PROCESS_CLIENT_FUNC
          equal to the key defined in this instance */
       if ( ak_len == 0 || strcmp(key_t, tp->m_ak) == 0 )
       {
-        char *ip_addr = inet_ntoa(tp->m_sa.sin_addr);
         if ( ak_len > 0 )
           printf("valid authority key provided by client: %s\n", ip_addr);
-        char *ps = make_pulse_string();
-        if ( send(tp->m_responder, ps, strlen(ps), 0) != SOCKET_ERROR )
+        const char *ps = make_pulse_string();
+
+#ifdef _WIN64
+        const int16_t bs = send(tp->m_responder, ps, strlen(ps), 0);
+#elif __linux__
+        const int16_t bs = write(tp->m_responder, ps, strlen(ps));
+#endif
+        /*
+        SOCKET_ERROR is equal to -1 albeit 
+        prefer not to deploy another macro
+        given that SOCKET_ERROR is WINAPI
+        */
+        if ( bs != -1 )
           printf("%s => %s\n", ps, ip_addr);
         free(ps);
       }
       if ( ak_len > 0 )
         free(key_t);
+#ifdef __linux__
+      free(ip_addr);
+      close(tp->m_responder);
+#elif _WIN64
       closesocket(tp->m_responder);
       shutdown(tp->m_responder, SD_BOTH);
+#endif
       bc = 0;
     }
   }
   while(bc > 0); /* terminates when byte count equal to zero */
+#ifdef _WIN64
   if ( tp->m_last != NULL )
     CloseHandle(tp->m_last);
+#elif __linux__
+  free(tp->m_last);
+#endif
   free(tp);
   return 0;
 }
@@ -374,8 +407,6 @@ int win(char *ak)
     return 1;
   }
 
-  g_handle = NULL;
-
   /* --- REPEAT */
   while(1)
   {
@@ -409,124 +440,78 @@ int win(char *ak)
   return 0;
 }
 #elif __linux__
-int lin(char *ak) {
-
+int lin(char *ak)
+{
   /* file descriptors */
   int32_t server, client;
 
-  /* addr struct length */
-  socklen_t client_addr_length;
-
-  /* socket data buffered length */
-  char sock_data[g_max_buffer_len];
-
   /* server and client addr structs */
-  struct sockaddr_in serv_addr, cli_addr;
-
-  /* ip address buffer */
-  char *ip_addr = NULL;
+  struct sockaddr_in serv_addr;
 
   /* socket option preference */
   int opt = 1;
-  
-  /* length of authority key */
-  uint16_t ak_len = strlen(ak);
-
-  /* null terminated key buffer */
-  char *key_t = NULL;
 
   /* poll the cpu */
   update_cpu_stats();
   sleep(1);
 
+  server = socket(AF_INET, SOCK_STREAM, 0);
+  if ( server < 0 ) {
+    perror("socket opening ERROR");
+    return 1;
+  }
+
+  /* fill with zeros */
+  bzero((char*)&serv_addr, sizeof(serv_addr));
+
+  /* set socket options */
+  if ( setsockopt(server, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) {
+    perror("setsockopt");
+    exit(EXIT_FAILURE);
+  }
+  serv_addr.sin_family = AF_INET;
+  serv_addr.sin_addr.s_addr = INADDR_ANY;
+  serv_addr.sin_port = htons(atoi(g_daemon_port));
+
+  /* bind to ip and port */
+  if ( bind(server, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0 )
+  {
+      perror("socket binding ERROR");
+      close(server);
+      return 1;
+  }
+
+  /* listen */
+  if ( listen(server, SOMAXCONN) < 0 ) {
+    perror("socket listen ERROR");
+    close(server);
+    return 1;
+  }
+
   while(1)
   {
-    ip_addr = (char*)malloc((INET6_ADDRSTRLEN+1) * sizeof(char));
-
-  	server = socket(AF_INET, SOCK_STREAM, 0);
-  	if ( server < 0 ) {
-  		perror("socket opening ERROR");
-  		continue;
-  	}
-
-    /* fill with zeros */
-  	bzero((char*)&serv_addr, sizeof(serv_addr));
-
-    /* set socket options */
-    if ( setsockopt(server, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) {
-      perror("setsockopt");
-      exit(EXIT_FAILURE);
-    }
-    serv_addr.sin_family = AF_INET;
-    serv_addr.sin_addr.s_addr = INADDR_ANY;
-    serv_addr.sin_port = htons(atoi(g_daemon_port));
-
-    /* bind to ip and port */
-    if ( bind(server, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0 )
-    {
-        perror("socket binding ERROR");
-        close(server);
-        continue;
-    }
-
     printf("awaiting connection(s)...\n");
 
-    /* listen */
-    listen(server, 10);
-    client_addr_length = sizeof(cli_addr);
-    client = accept(server, (struct sockaddr*)&cli_addr, &client_addr_length);
+    struct sockaddr_in client_addr;
+    socklen_t addr_len = sizeof(client_addr);
+    bzero((char*)&client_addr, sizeof(client_addr));
+    client = accept(server, (struct sockaddr*)&client_addr, &addr_len);
     if ( client < 0 ) {
       perror("socket accept ERROR");
-      close(server);
       continue;
     }
 
-    /* cleanse the struct with zeros before read */
-    bzero(sock_data, g_max_buffer_len);
+    // --- INIT THREAD
+    g_handle = (pthread_t*)malloc(sizeof(pthread_t));
 
-    /* read data chunk */
-    if ( read(client, sock_data, g_max_buffer_len-1) < 0 ) {
-      perror("socket read ERROR");
-      close(client);
-      close(server);
-      continue;
-    }
-    bzero(ip_addr, INET6_ADDRSTRLEN);
-
-    /* ipv6 addresses consist of a maximum 39 characters */
-    get_client_ip((struct sockaddr*)&cli_addr, ip_addr);
-
-    if ( ak_len > 0 )
-      allocate_key_buffer(&key_t, sock_data, ak_len);
-
-    /* pulse string */
-    char* ps;
-
-    /* check authoriy key given by client is 
-       equal to the key defined in this instance */
-    if ( ak_len == 0 || strcmp(key_t, ak) == 0 )
-    {
-      if ( ak_len > 0 )
-        printf("valid authority key (%s) provided by client (%s)\n", ak, ip_addr);
-
-      /* compile pulse string and send back */
-      ps = make_pulse_string();
-      if ( write(client, ps, strlen(ps)) < 0 )
-        perror("socket write ERROR");
-      else
-        printf("%s => %s\n", ps, ip_addr);
-      free(ps);
-    }
-    else
-    {
-      printf("invalid authority key (%s) provided by client (%s)\n", sock_data, ip_addr);
-    }
-    if ( ak_len > 0 )
-      free(key_t);
-    free(ip_addr);
-    close(client);
-    close(server);
-    sleep_ms(200);
+    TP *tp = (TP*)malloc(sizeof(TP));
+    tp->m_ak = ak;
+    tp->m_responder = client;
+    tp->m_sa = client_addr;
+    tp->m_last = g_handle;    
+    
+    pthread_create(g_handle, NULL, process_client, (void*)tp);
+    pthread_detach(g_handle);
   }
   return 0;
 }
@@ -556,7 +541,7 @@ uint8_t process_names_count()
 }
 
 /* routine to cleanly exit */
-void clean_exit(int s)
+void clean_exit()
 {
 #ifdef _WIN64
   if ( g_handle != NULL )
@@ -584,6 +569,8 @@ int main(int argc, char *argv[])
         if ( extract_key(argv[1], 2) != 0 )
           ak = argv[1];
   }}}
+
+  g_handle = NULL;
   g_process_count = process_names_count();
   
   printf("\nPulse Server... (CTRL+C to exit)\n");
@@ -591,7 +578,7 @@ int main(int argc, char *argv[])
     printf("Authority key set to: %s\n\n", ak);
   else
     printf("Key-less mode, any client can probe this server\n\n");
-  
+
 #ifdef _WIN64
   return win(ak);
 #elif __linux__

@@ -31,6 +31,22 @@ language governing permissions and limitations under the License.
 #include <arpa/inet.h>
 #include <inttypes.h>
 #include <time.h>
+#include <pthread.h>
+
+/* threading property parameter */
+typedef struct
+{
+  /* authority key */
+  char *m_ak;
+
+  /* response socket */
+  int32_t m_responder;
+
+  /* af addr/port */
+  struct sockaddr_in m_sa;
+
+  void *m_last;
+} TP;
 
 /*
 https://www.man7.org/linux/man-pages/man5/proc_stat.5.html

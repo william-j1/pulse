@@ -339,6 +339,35 @@ PROCESS_CLIENT_FUNC
   return 0;
 }
 
+void socket_data_cleanse()
+{
+  TP *tp = (TP*)g_handle_object;
+#ifdef _WIN64
+  if ( g_handle != NULL ) {
+    WaitForSingleObject(g_handle, 5000);
+    CloseHandle(g_handle);
+  }
+  if ( tp != NULL ) {
+    closesocket(tp->m_responder);
+    free(tp);
+  }
+  closesocket(g_listener);
+  WSACleanup();
+#elif __linux__
+  if ( g_handle != NULL ) {
+    pthread_cancel(g_handle);
+    pthread_join(g_handle, NULL);
+    free(g_handle);
+  }
+  if ( tp != NULL ) {
+    close(tp->m_responder);
+    free(tp);
+  }
+  close(g_listener);
+  exit(0);
+#endif
+}
+
 #ifdef _WIN64
 int win(char *ak)
 {
@@ -414,13 +443,7 @@ int win(char *ak)
     /* --- ACCEPT */
     SOCKET responder = accept(g_listener, (struct sockaddr *) &sa, &sock_len);
     if (responder == INVALID_SOCKET) {
-      printf("accept failed with error: %d\n", WSAGetLastError());
-      if ( g_handle != NULL ) {
-        WaitForSingleObject(g_handle, 5000);
-        CloseHandle(g_handle);
-      }
-      closesocket(g_listener);
-      WSACleanup();
+      socket_data_cleanse();
       return 1;
     }
 
@@ -488,9 +511,9 @@ int lin(char *ak)
     socklen_t addr_len = sizeof(client_addr);
     bzero((char*)&client_addr, sizeof(client_addr));
     int32_t client = accept(g_listener, (struct sockaddr*)&client_addr, &addr_len);
-    if ( client < 0 ) {
-      perror("socket accept ERROR");
-      continue;
+    if ( client == -1 ) {
+      socket_data_cleanse();
+      return 1;
     }
   
     // --- INIT THREAD
@@ -535,24 +558,8 @@ uint8_t process_names_count()
 void clean_exit()
 {
   printf("\nPulse Server exiting...\n");
-  TP *tp = (TP*)g_handle_object;
-#ifdef _WIN64
-  if ( g_handle != NULL ) {
-    WaitForSingleObject(g_handle, 5000);
-    CloseHandle(g_handle);
-  }
-  if ( tp != NULL )
-    closesocket(tp->m_responder);
-  closesocket(g_listener);
-  WSACleanup();
-#elif __linux__
-  if ( tp != NULL )
-    close(tp->m_responder);
-  if ( g_handle != NULL )
-    free(g_handle);
-  close(g_listener);
+  socket_data_cleanse();
   exit(0);
-#endif
 }
 
 /*

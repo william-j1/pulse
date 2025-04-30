@@ -76,7 +76,7 @@ static const char g_mount_point[] = "C:\\";
 static const char g_mount_point[] = "/";
 #endif
 
-/* timeout for treading and network ops */
+/* timeout for threading and network ops */
 static const uint16_t g_op_timeout = 5000;
 
 /* sleep function in milliseconds */
@@ -542,7 +542,6 @@ int lin(char *ak)
 
   while(1)
   {
-    printf("awaiting connection(s)...\n");
     struct sockaddr_in client_addr;
     socklen_t addr_len = sizeof(client_addr);
     bzero((char*)&client_addr, sizeof(client_addr));
@@ -555,8 +554,8 @@ int lin(char *ak)
     /* set non-blocking */
     int f1 = fcntl(client, F_GETFL, 0);
     if ( fcntl(client, F_SETFL, f1 | O_NONBLOCK) == -1 ) {
-      perror("fcntl set error");
-      exit(EXIT_FAILURE);
+      socket_data_cleanse();
+      return 1;
     }
 
     // --- INIT THREAD

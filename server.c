@@ -65,6 +65,7 @@ static const char *g_process_check_for[] = {
 /* max buffer length for data-io */
 static const uint16_t g_max_len = 512;
 
+/* ptrs to thread friendly handles */
 static void *g_handle;
 static void *g_handle_object;
 
@@ -257,20 +258,16 @@ void allocate_key_buffer(char **key_t, const char *sock_data, uint16_t ak_len)
 /* process the client */
 PROCESS_CLIENT_FUNC
 {
+  /* cast from void ptr */
   TP *tp = (TP*)argument_t;
 
-  /* byte count */
-  uint32_t bc = 0;
-
-  /* key buffer */
-  char *key_t = NULL;
-
-  /* authority key length */
-  uint16_t ak_len = strlen(tp->m_ak);
+  uint32_t bc = 0;                    /* byte count */
+  char *key_t = NULL;                 /* key buffer */        
+  uint16_t ak_len = strlen(tp->m_ak); /* key length */
 
   /* socket data */
   char sock_data[g_max_len];
-
+  socklen_t sock_len = g_max_len;
   char *ip_addr = NULL;
 
 #if __linux__
@@ -281,7 +278,7 @@ PROCESS_CLIENT_FUNC
   do
   {
 #ifdef _WIN64
-    bc = recv(tp->m_responder, sock_data, (socklen_t)g_max_len, 0);
+    bc = recv(tp->m_responder, sock_data, sock_len, 0);
     ip_addr = inet_ntoa(tp->m_sa.sin_addr);
 #elif __linux__
     bc = read(tp->m_responder, sock_data, g_max_len-1);
@@ -302,8 +299,8 @@ PROCESS_CLIENT_FUNC
       {
         if ( ak_len > 0 )
           printf("valid authority key provided by client: %s\n", ip_addr);
-        char *ps = make_pulse_string();
 
+        char *ps = make_pulse_string();
 #ifdef _WIN64
         const int16_t bs = send(tp->m_responder, ps, strlen(ps), 0);
 #elif __linux__
@@ -433,6 +430,7 @@ int win(char *ak)
     tp->m_responder = responder;
     tp->m_sa = sa;
     tp->m_last = g_handle;
+    g_handle_object = tp;
     g_handle = CreateThread(NULL, 0, process_client, (LPVOID)tp, 0, NULL);
   }
   return 0;
@@ -440,9 +438,6 @@ int win(char *ak)
 #elif __linux__
 int lin(char *ak)
 {
-  /* file descriptors */
-  int32_t server, client;
-
   /* server and client addr structs */
   struct sockaddr_in serv_addr;
 
@@ -453,8 +448,8 @@ int lin(char *ak)
   update_cpu_stats();
   sleep(1);
 
-  server = socket(AF_INET, SOCK_STREAM, 0);
-  if ( server < 0 ) {
+  g_listener = socket(AF_INET, SOCK_STREAM, 0);
+  if ( g_listener < 0 ) {
     perror("socket opening ERROR");
     return 1;
   }
@@ -463,7 +458,7 @@ int lin(char *ak)
   bzero((char*)&serv_addr, sizeof(serv_addr));
 
   /* set socket options */
-  if ( setsockopt(server, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) {
+  if ( setsockopt(g_listener, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) {
     perror("setsockopt");
     exit(EXIT_FAILURE);
   }
@@ -472,33 +467,32 @@ int lin(char *ak)
   serv_addr.sin_port = htons(atoi(g_daemon_port));
 
   /* bind to ip and port */
-  if ( bind(server, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0 )
+  if ( bind(g_listener, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0 )
   {
       perror("socket binding ERROR");
-      close(server);
+      close(g_listener);
       return 1;
   }
 
   /* listen */
-  if ( listen(server, SOMAXCONN) < 0 ) {
+  if ( listen(g_listener, SOMAXCONN) < 0 ) {
     perror("socket listen ERROR");
-    close(server);
+    close(g_listener);
     return 1;
   }
 
   while(1)
   {
     printf("awaiting connection(s)...\n");
-
     struct sockaddr_in client_addr;
     socklen_t addr_len = sizeof(client_addr);
     bzero((char*)&client_addr, sizeof(client_addr));
-    client = accept(server, (struct sockaddr*)&client_addr, &addr_len);
+    int32_t client = accept(g_listener, (struct sockaddr*)&client_addr, &addr_len);
     if ( client < 0 ) {
       perror("socket accept ERROR");
       continue;
     }
-
+  
     // --- INIT THREAD
     g_handle = (pthread_t*)malloc(sizeof(pthread_t));
     TP *tp = (TP*)malloc(sizeof(TP));
@@ -507,7 +501,6 @@ int lin(char *ak)
     tp->m_sa = client_addr;
     tp->m_last = g_handle;    
     g_handle_object = tp;
-  
     pthread_create(g_handle, NULL, process_client, (void*)tp);
     pthread_detach(g_handle);
   }
@@ -579,6 +572,7 @@ int main(int argc, char *argv[])
   }}}
 
   g_handle = NULL;
+  g_handle_object = NULL;
   g_process_count = process_names_count();
   
   printf("\nPulse Server... (CTRL+C to exit)\n");

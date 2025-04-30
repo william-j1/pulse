@@ -76,7 +76,7 @@ static struct sysinfo sys_info;
 static struct cpu_stats cpu_p, cpu_c;
 
 /* id for server */
-static int32_t g_listener = -1;
+static int32_t g_listener;
 
 const char *get_client_ip(const struct sockaddr *sa, char *ip_addr);
 const uint8_t get_cpu_stats(struct cpu_stats* stats);

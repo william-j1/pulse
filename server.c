@@ -289,17 +289,17 @@ PROCESS_CLIENT_FUNC
          equal to the key defined in this instance */
       if ( ak_len == 0 || strcmp(key_t, tp->m_ak) == 0 )
       {
-        char *c_ipaddr = inet_ntoa(tp->m_sa.sin_addr);
+        char *ip_addr = inet_ntoa(tp->m_sa.sin_addr);
 
         /* server-side logs visible through a screen session */
         if ( ak_len > 0 )
-          printf("valid authority key provided by client: %s\n", c_ipaddr);
+          printf("valid authority key provided by client: %s\n", ip_addr);
 
         /* compile a pulse string and send back to the client */
         char *ps = make_pulse_string();
 
         if ( send(tp->m_responder, ps, strlen(ps), 0) != SOCKET_ERROR )
-          printf("%s => %s\n", ps, c_ipaddr);
+          printf("%s => %s\n", ps, ip_addr);
         free(ps);
       }
       if ( ak_len > 0 )

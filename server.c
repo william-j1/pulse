@@ -551,6 +551,9 @@ void clean_exit()
   }
   closesocket(g_listener);
   WSACleanup();
+#elif __linux__
+  free(g_handle);
+  exit(0);
 #endif
 }
 

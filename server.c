@@ -66,6 +66,7 @@ static const char *g_process_check_for[] = {
 static const uint16_t g_max_buffer_len = 512;
 
 static void *g_handle;
+static void *g_handle_object;
 
 /* mount point for checking disk stats */
 #ifdef _WIN64
@@ -503,12 +504,12 @@ int lin(char *ak)
 
     // --- INIT THREAD
     g_handle = (pthread_t*)malloc(sizeof(pthread_t));
-
     TP *tp = (TP*)malloc(sizeof(TP));
     tp->m_ak = ak;
     tp->m_responder = client;
     tp->m_sa = client_addr;
     tp->m_last = g_handle;    
+    g_handle_object = tp;
   
     pthread_create(g_handle, NULL, process_client, (void*)tp);
     pthread_detach(g_handle);
@@ -543,17 +544,23 @@ uint8_t process_names_count()
 /* routine to cleanly exit */
 void clean_exit()
 {
+  printf("\nPulse Server exiting...\n");
+  TP *tp = (TP*)g_handle_object;
 #ifdef _WIN64
-  if ( g_handle != NULL )
-  {
+  if ( g_handle != NULL ) {
     WaitForSingleObject(g_handle, 5000);
     CloseHandle(g_handle);
   }
+  if ( tp != NULL )
+    closesocket(tp->m_responder);
   closesocket(g_listener);
   WSACleanup();
 #elif __linux__
+  if ( tp != NULL )
+    close(tp->m_responder);
   if ( g_handle != NULL )
     free(g_handle);
+  close(g_listener);
   exit(0);
 #endif
 }

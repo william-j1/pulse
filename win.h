@@ -25,6 +25,8 @@ language governing permissions and limitations under the License.
 #include <pdhmsg.h>
 #include <stdint.h>
 
+static SOCKET g_listener = INVALID_SOCKET;
+
 const uint8_t has_process(const char *p_list[], const uint8_t p_count);
 
 #endif // __WIN_H

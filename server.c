@@ -23,6 +23,7 @@ DEPLOYMENT NOTES:
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
+#include <signal.h>
 
 #ifdef _WIN64
 #include "win.h"
@@ -63,6 +64,8 @@ static const char *g_process_check_for[] = {
 
 /* internal buffer length to handle network-io */
 static const uint16_t g_max_buffer_len = 512;
+
+static void *g_handle;
 
 /* mount point for checking disk stats */
 #ifdef _WIN64
@@ -335,10 +338,6 @@ int win(char *ak)
   /* winsock library */
   WSADATA wsa_data;
 
-  /* listener and responder */
-  SOCKET listener = INVALID_SOCKET;
-  SOCKET responder = INVALID_SOCKET;
-
   /* address info structs */
   struct addrinfo *result = NULL;
   struct addrinfo hints;
@@ -366,21 +365,19 @@ int win(char *ak)
   }
 
   /* init a socket */
-  listener = socket(result->ai_family,
-                    result->ai_socktype,
-                    result->ai_protocol);
-  if ( listener == INVALID_SOCKET ) {
+  g_listener = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
+  if ( g_listener == INVALID_SOCKET ) {
     printf("socket failed with error: %d\n", WSAGetLastError());
     freeaddrinfo(result);
     WSACleanup();
   }
 
   /* bind to address and port of our choosing */
-  ec = bind(listener, result->ai_addr, (int)result->ai_addrlen);
+  ec = bind(g_listener, result->ai_addr, (int)result->ai_addrlen);
   if ( ec == SOCKET_ERROR ) {
     printf("binding failed with error: %d\n", WSAGetLastError());
     freeaddrinfo(result);
-    closesocket(listener);
+    closesocket(g_listener);
     WSACleanup();
     return 1;
   }
@@ -390,15 +387,15 @@ int win(char *ak)
 
   /* the socket is setup to listen, this is non-blocking, the accept 
      function inside the indefinite loop (below) is blocking */
-  ec = listen(listener, SOMAXCONN);
+  ec = listen(g_listener, SOMAXCONN);
   if ( ec == SOCKET_ERROR ) {
     printf("listener failed with error: %d\n", WSAGetLastError());
-    closesocket(listener);
+    closesocket(g_listener);
     WSACleanup();
     return 1;
   }
 
-  HANDLE pHandle = NULL;
+  g_handle = NULL;
 
   /* repeat */
   while(1)
@@ -410,10 +407,10 @@ int win(char *ak)
     socklen_t socklen = sizeof(sa);
 
     /* accept the connection */
-    responder = accept(listener, (struct sockaddr *) &sa, &socklen);
+    SOCKET responder = accept(g_listener, (struct sockaddr *) &sa, &socklen);
     if (responder == INVALID_SOCKET) {
       printf("accept failed with error: %d\n", WSAGetLastError());
-      closesocket(listener);
+      closesocket(g_listener);
       WSACleanup();
       return 1;
     }
@@ -423,17 +420,10 @@ int win(char *ak)
     tp->m_ak = ak;
     tp->m_responder = responder;
     tp->m_sa = sa;
-    tp->m_last = pHandle;
+    tp->m_last = g_handle;
     tp->m_this = tp;
-    pHandle = CreateThread(NULL, 0, process_client, (LPVOID)tp, 0, NULL);
+    g_handle = CreateThread(NULL, 0, process_client, (LPVOID)tp, 0, NULL);
   }
-  if ( pHandle != NULL )
-  {
-    WaitForSingleObject(pHandle, 5000);
-    CloseHandle(pHandle);
-  }
-  closesocket(listener);
-  WSACleanup();
   return 0;
 }
 #elif __linux__
@@ -560,6 +550,8 @@ int lin(char *ak) {
 }
 #endif
 
+
+
 /* extracts a key from the command line argument */
 uint8_t extract_key(char *str, size_t n)
 {
@@ -583,11 +575,27 @@ uint8_t process_names_count()
   return c;
 }
 
+void clean_exit(int s)
+{
+#ifdef _WIN64
+  printf("clean exit triggered...\n");
+  if ( g_handle != NULL )
+  {
+    WaitForSingleObject(g_handle, 5000);
+    CloseHandle(g_handle);
+  }
+  closesocket(g_listener);
+  WSACleanup();
+#endif
+}
+
 /*
 accepts override using the -k flag: ./server -kKEY_TEXT
 */
 int main(int argc, char *argv[])
 {
+  signal(SIGINT, clean_exit);
+
   argc -= 1;
   char *ak = "";
   if ( argc >= 1 ) {
@@ -597,12 +605,13 @@ int main(int argc, char *argv[])
           ak = argv[1];
   }}}
   g_process_count = process_names_count();
-
-  printf("Pulse Server\n\n");
+  
+  printf("Pulse Server... (CTRL+C to exit)\n\n");
   if ( strlen(ak) )
     printf("Authority key set to: %s\n\n", ak);
   else
     printf("Key-less mode, any client can probe this server\n\n");
+  
 #ifdef _WIN64
   return win(ak);
 #elif __linux__

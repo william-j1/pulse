@@ -76,6 +76,9 @@ static const char g_mount_point[] = "C:\\";
 static const char g_mount_point[] = "/";
 #endif
 
+/* timeout for treading and network ops */
+static const uint16_t g_op_timeout = 5000;
+
 /* sleep function in milliseconds */
 void sleep_ms(uint32_t ms) {
 #ifdef WIN32
@@ -249,6 +252,24 @@ void allocate_key_buffer(char **key_t, const char *sock_data, uint16_t ak_len)
   (*key_t)[ak_len] = '\0'; // attach null terminator
 }
 
+/* millisec offset from epoch: 1st Jan, 1970 */
+uint64_t ms_from_epoch()
+{
+#if _WIN64
+  FILETIME ft;
+  GetSystemTimeAsFileTime(&ft);
+  ULARGE_INTEGER ui;
+  ui.LowPart = ft.dwLowDateTime;
+  ui.HighPart = ft.dwHighDateTime;
+  /* 100-nanosecond intervals from 1st Jan, 1601 */
+  return (ui.QuadPart / 10000) - 11644473600000LL;
+#elif __linux__
+  struct timeval tv;
+  gettimeofday(&tv, NULL);
+  return (long long)(tv.tv_sec) * 1000 + (tv.tv_usec / 1000);
+#endif
+}
+
 #if _WIN64
 #define PROCESS_CLIENT_FUNC DWORD WINAPI process_client(LPVOID argument_t)
 #elif __linux__
@@ -261,7 +282,7 @@ PROCESS_CLIENT_FUNC
   /* cast from void ptr */
   TP *tp = (TP*)argument_t;
 
-  uint32_t bc = 0;                    /* byte count */
+  uint32_t br = 0;                    /* bytes received */
   char *key_t = NULL;                 /* key buffer */        
   uint16_t ak_len = strlen(tp->m_ak); /* key length */
 
@@ -274,21 +295,32 @@ PROCESS_CLIENT_FUNC
   bzero(sock_data, g_max_len);
 #endif
 
-  /* consistently repeat to capture on-going byte stream */
+  /* pending io wait... */
+  uint8_t flag_as_pending = 1;
+
+  /* timeout for non-blocking socket */
+  const uint64_t utms_start = ms_from_epoch();
   do
   {
+    if ( ms_from_epoch() >= utms_start + g_op_timeout )
+      break;
+
 #ifdef _WIN64
-    bc = recv(tp->m_responder, sock_data, sock_len, 0);
+    br = recv(tp->m_responder, sock_data, sock_len, 0);
+    if ( br == 0 && ak_len != 0 )
+      continue;
     ip_addr = inet_ntoa(tp->m_sa.sin_addr);
 #elif __linux__
-    bc = read(tp->m_responder, sock_data, g_max_len-1);
+    br = read(tp->m_responder, sock_data, g_max_len-1);
+    if ( br == -1 && ak_len != 0 )
+      continue;
     ip_addr = (char*)malloc((INET6_ADDRSTRLEN+1) * sizeof(char));
     bzero(ip_addr, INET6_ADDRSTRLEN);
     get_client_ip((struct sockaddr*)&tp->m_sa, ip_addr);
 #endif
 
     /* proceed if authority key provided unless key length is zero */
-    if ( ak_len == 0 || bc >= ak_len )
+    if ( ak_len == 0 || br >= ak_len )
     {
       if ( ak_len > 0 )
         allocate_key_buffer(&key_t, sock_data, ak_len);
@@ -315,24 +347,23 @@ PROCESS_CLIENT_FUNC
         if ( bs != -1 )
           printf("%s => %s\n", ps, ip_addr);
         free(ps);
+        flag_as_pending = 0;
       }
       if ( ak_len > 0 )
         free(key_t);
 #ifdef __linux__
       free(ip_addr);
-      close(tp->m_responder);
-#elif _WIN64
-      closesocket(tp->m_responder);
-      shutdown(tp->m_responder, SD_BOTH);
 #endif
-      bc = 0;
     }
   }
-  while(bc > 0); /* terminates when byte count equal to zero */
+  while(flag_as_pending);
 #ifdef _WIN64
+  closesocket(tp->m_responder);
+  shutdown(tp->m_responder, SD_BOTH);
   if ( tp->m_last != NULL )
     CloseHandle(tp->m_last);
 #elif __linux__
+  close(tp->m_responder);
   free(tp->m_last);
 #endif
   free(tp);
@@ -344,7 +375,7 @@ void socket_data_cleanse()
   TP *tp = (TP*)g_handle_object;
 #ifdef _WIN64
   if ( g_handle != NULL ) {
-    WaitForSingleObject(g_handle, 5000);
+    WaitForSingleObject(g_handle, (DWORD)g_op_timeout);
     CloseHandle(g_handle);
   }
   if ( tp != NULL ) {
@@ -406,6 +437,7 @@ int win(char *ak)
     printf("socket failed with error: %d\n", WSAGetLastError());
     freeaddrinfo(result);
     WSACleanup();
+    return 1;
   }
 
   /* bind to address and port of our choosing */
@@ -434,17 +466,21 @@ int win(char *ak)
   /* --- REPEAT */
   while(1)
   {
-    printf("awaiting connection(s)...\n");
-
     /* --- ADDR */
     struct sockaddr_in sa = {0};
     socklen_t sock_len = sizeof(sa);
 
     /* --- ACCEPT */
     SOCKET responder = accept(g_listener, (struct sockaddr *) &sa, &sock_len);
-    if (responder == INVALID_SOCKET) {
-      socket_data_cleanse();
-      return 1;
+    if (responder == INVALID_SOCKET )
+      continue;
+
+    /* --- NON BLOCKING */
+    u_long mode = 1;
+    if (ioctlsocket(responder, FIONBIO, &mode) != 0) {
+      printf("ioctlsocket failed: %d\n", WSAGetLastError());
+      closesocket(responder);
+      continue;
     }
 
     // --- INIT THREAD
@@ -461,7 +497,7 @@ int win(char *ak)
 #elif __linux__
 int lin(char *ak)
 {
-  /* server and client addr structs */
+  /* addr struct for serv */
   struct sockaddr_in serv_addr;
 
   /* socket option preference */
@@ -477,14 +513,14 @@ int lin(char *ak)
     return 1;
   }
 
-  /* fill with zeros */
-  bzero((char*)&serv_addr, sizeof(serv_addr));
-
   /* set socket options */
   if ( setsockopt(g_listener, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) {
     perror("setsockopt");
     exit(EXIT_FAILURE);
   }
+
+  /* set sockaddr_in */
+  bzero((char*)&serv_addr, sizeof(serv_addr));
   serv_addr.sin_family = AF_INET;
   serv_addr.sin_addr.s_addr = INADDR_ANY;
   serv_addr.sin_port = htons(atoi(g_daemon_port));
@@ -516,6 +552,13 @@ int lin(char *ak)
       return 1;
     }
   
+    /* set non-blocking */
+    int f1 = fcntl(client, F_GETFL, 0);
+    if ( fcntl(client, F_SETFL, f1 | O_NONBLOCK) == -1 ) {
+      perror("fcntl set error");
+      exit(EXIT_FAILURE);
+    }
+
     // --- INIT THREAD
     g_handle = (pthread_t*)malloc(sizeof(pthread_t));
     TP *tp = (TP*)malloc(sizeof(TP));

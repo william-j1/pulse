@@ -32,6 +32,8 @@ language governing permissions and limitations under the License.
 #include <inttypes.h>
 #include <time.h>
 #include <pthread.h>
+#include <sys/time.h>
+#include <fcntl.h>
 
 /* threading property parameter */
 typedef struct

@@ -244,6 +244,90 @@ void allocate_key_buffer(char **key_t, const char *sock_data, uint16_t ak_len)
   (*key_t)[ak_len] = '\0'; // attach null terminator
 }
 
+/* threading property parameter */
+typedef struct
+{
+  /* authority key */
+  char *m_ak;
+
+  /* response socket */
+  SOCKET m_responder;
+
+  /* af addr/port */
+  struct sockaddr_in m_sa;
+
+  /* point to last */
+  HANDLE m_last;
+
+  /* point to this */
+  void *m_this;
+} TP;
+
+/* process the remain */
+DWORD WINAPI process_client(LPVOID lpParam)
+{
+  TP *tp = (TP*)lpParam;
+
+  /* byte count received */
+  uint32_t bc = 0;
+
+  /* null terminated key buffer */
+  char *key_t = NULL;
+
+  /* length of authority key */
+  uint16_t ak_len = strlen(tp->m_ak);
+
+  /* socket work variables */
+  char sock_data[g_max_buffer_len];
+
+  /* max length of data chunk from on-going socket */
+  socklen_t sock_data_len = g_max_buffer_len;
+
+  /* consistently repeat to capture on-going byte stream */
+  do
+  {
+    /* receive a data chunk up to the buffer length */
+    bc = recv(tp->m_responder, sock_data, sock_data_len, 0);
+
+    /* proceed if authority key provided unless key length is zero */
+    if ( ak_len == 0 || bc >= ak_len )
+    {
+      if ( ak_len > 0 )
+        allocate_key_buffer(&key_t, sock_data, ak_len);
+
+      /* check authority key given by client is 
+         equal to the key defined in this instance */
+      if ( ak_len == 0 || strcmp(key_t, tp->m_ak) == 0 )
+      {
+        char *c_ipaddr = inet_ntoa(tp->m_sa.sin_addr);
+
+        /* server-side logs visible through a screen session */
+        if ( ak_len > 0 )
+          printf("valid authority key provided by client: %s\n", c_ipaddr);
+
+        /* compile a pulse string and send back to the client */
+        char *ps = make_pulse_string();
+
+        if ( send(tp->m_responder, ps, strlen(ps), 0) != SOCKET_ERROR )
+          printf("%s => %s\n", ps, c_ipaddr);
+        free(ps);
+      }
+      if ( ak_len > 0 )
+        free(key_t);
+      closesocket(tp->m_responder);
+      shutdown(tp->m_responder, SD_BOTH);
+      bc = 0;
+    }
+  }
+  while(bc > 0); /* terminates when byte count equal to zero */
+  if ( tp->m_last != NULL ) {
+    CloseHandle(tp->m_last);
+    printf("closed handle");
+  }
+  free(tp);
+  return 0;
+}
+
 #ifdef _WIN64
 /* entry point for windows */
 int win(char *ak)
@@ -258,21 +342,6 @@ int win(char *ak)
   /* address info structs */
   struct addrinfo *result = NULL;
   struct addrinfo hints;
-
-  /* socket work variables */
-  char sock_data[g_max_buffer_len];
-
-  /* max length of data chunk from on-going socket */
-  socklen_t sock_data_len = g_max_buffer_len;
-
-  /* byte count received */
-  uint32_t bc = 0;
-
-  /* null terminated key buffer */
-  char *key_t = NULL;
-
-  /* length of authority key */
-  uint16_t ak_len = strlen(ak);
 
   /* start winsock 2.2 - ec = error code should problem arise */
   uint32_t ec = WSAStartup(MAKEWORD(2,2), &wsa_data);
@@ -329,6 +398,8 @@ int win(char *ak)
     return 1;
   }
 
+  HANDLE pHandle = NULL;
+
   /* repeat */
   while(1)
   {
@@ -347,47 +418,19 @@ int win(char *ak)
       return 1;
     }
 
-    /* consistently repeat to capture on-going byte stream */
-    do
-    {
-      /* receive a data chunk up to the buffer length */
-      bc = recv(responder, sock_data, sock_data_len, 0);
-
-      /* proceed if authority key provided unless key length is zero */
-      if ( ak_len == 0 || bc >= ak_len )
-      {
-        if ( ak_len > 0 )
-          allocate_key_buffer(&key_t, sock_data, ak_len);
-
-        /* check authority key given by client is 
-           equal to the key defined in this instance */
-        if ( ak_len == 0 || strcmp(key_t, ak) == 0 )
-        {
-          /* pull ip */
-          char *c_ipaddr = inet_ntoa(sa.sin_addr);
-
-          /* server-side logs visible through a screen session */
-          if ( ak_len > 0 )
-            printf("valid authority key provided by client: %s\n", c_ipaddr);
-
-          /* compile a pulse string and send back to the client */
-          char *ps = make_pulse_string();
-
-          if ( send(responder, ps, strlen(ps), 0) != SOCKET_ERROR )
-            printf("%s => %s\n", ps, c_ipaddr);
-          free(ps);
-        }
-        if ( ak_len > 0 )
-          free(key_t);
-        closesocket(responder);
-        shutdown(responder, SD_BOTH);
-        bc = 0;
-      }
-    }
-    while(bc > 0); /* terminates when byte count equal to zero */
-
-    /* do events */
-    sleep_ms(200);
+    // --- INIT THREAD
+    TP *tp = (TP*)malloc(sizeof(TP));
+    tp->m_ak = ak;
+    tp->m_responder = responder;
+    tp->m_sa = sa;
+    tp->m_last = pHandle;
+    tp->m_this = tp;
+    pHandle = CreateThread(NULL, 0, process_client, (LPVOID)tp, 0, NULL);
+  }
+  if ( pHandle != NULL )
+  {
+    WaitForSingleObject(pHandle, 5000);
+    CloseHandle(pHandle);
   }
   closesocket(listener);
   WSACleanup();

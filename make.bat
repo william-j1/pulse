@@ -1,1 +1,1 @@
-gcc .\server.c .\win.c -o pulse_serv.exe -lsapi -lws2_32 -lpdh
+gcc -std=c11 -o  pulse_serv.exe .\server.c .\win.c -lsapi -lws2_32 -lpdh

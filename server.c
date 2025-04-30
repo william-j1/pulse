@@ -289,7 +289,7 @@ PROCESS_CLIENT_FUNC
     bc = read(tp->m_responder, sock_data, g_max_buffer_len-1);
     ip_addr = (char*)malloc((INET6_ADDRSTRLEN+1) * sizeof(char));
     bzero(ip_addr, INET6_ADDRSTRLEN);
-    get_client_ip((struct sockaddr*)&tp->m_sa.sin_addr, ip_addr);
+    get_client_ip((struct sockaddr*)&tp->m_sa, ip_addr);
 #endif
 
     /* proceed if authority key provided unless key length is zero */
@@ -304,7 +304,7 @@ PROCESS_CLIENT_FUNC
       {
         if ( ak_len > 0 )
           printf("valid authority key provided by client: %s\n", ip_addr);
-        const char *ps = make_pulse_string();
+        char *ps = make_pulse_string();
 
 #ifdef _WIN64
         const int16_t bs = send(tp->m_responder, ps, strlen(ps), 0);
@@ -314,7 +314,8 @@ PROCESS_CLIENT_FUNC
         /*
         SOCKET_ERROR is equal to -1 albeit 
         prefer not to deploy another macro
-        given that SOCKET_ERROR is WINAPI
+        given that SOCKET_ERROR is WINAPI 
+        specific and -1 covers both (win,lin)
         */
         if ( bs != -1 )
           printf("%s => %s\n", ps, ip_addr);
@@ -344,7 +345,6 @@ PROCESS_CLIENT_FUNC
 }
 
 #ifdef _WIN64
-/* entry point for windows */
 int win(char *ak)
 {
   /* winsock */
@@ -509,7 +509,7 @@ int lin(char *ak)
     tp->m_responder = client;
     tp->m_sa = client_addr;
     tp->m_last = g_handle;    
-    
+  
     pthread_create(g_handle, NULL, process_client, (void*)tp);
     pthread_detach(g_handle);
   }
@@ -559,7 +559,7 @@ void clean_exit()
 }
 
 /*
-accepts override using the -k flag: ./server -kKEY_TEXT
+accepts override using -k of the form: ./server -kKEY_TEXT
 */
 int main(int argc, char *argv[])
 {

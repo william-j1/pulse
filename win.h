@@ -44,6 +44,7 @@ typedef struct
 /* SOCKET (UINT_PTR) for server */
 static SOCKET g_listener = INVALID_SOCKET;
 
+/* queries for processes */
 const uint8_t has_process(const char *p_list[], const uint8_t p_count);
 
 #endif // __WIN_H

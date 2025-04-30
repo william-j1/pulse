@@ -45,6 +45,7 @@ typedef struct
   /* af addr/port */
   struct sockaddr_in m_sa;
 
+  /* ptr to */
   void *m_last;
 } TP;
 

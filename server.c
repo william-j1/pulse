@@ -478,9 +478,8 @@ int win(char *ak)
     /* --- NON BLOCKING */
     u_long mode = 1;
     if (ioctlsocket(responder, FIONBIO, &mode) != 0) {
-      printf("ioctlsocket failed: %d\n", WSAGetLastError());
-      closesocket(responder);
-      continue;
+      socket_data_cleanse();
+      return 1;
     }
 
     // --- INIT THREAD
